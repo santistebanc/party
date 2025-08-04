@@ -199,10 +199,30 @@ export default class RoomServer implements Party.Server {
     const players = await this.getAllPlayers();
     const roomId = this.roomName.replace('room-', '');
     
-    // For now, we'll just log the player count update
-    // In a real implementation, you might want to use PartyKit's internal messaging
-    // or a different approach to communicate between rooms
-    console.log(`Room ${this.roomName}: Player count updated to ${players.length}`);
+    try {
+      // Send HTTP request to lobby to update player count
+      const response = await fetch(`/parties/lobby/lobby`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          type: "update-player-count",
+          data: {
+            roomId: roomId,
+            playerCount: players.length
+          }
+        })
+      });
+      
+      if (response.ok) {
+        console.log(`Room ${this.roomName}: Player count updated to ${players.length} (sent to lobby)`);
+      } else {
+        console.log(`Room ${this.roomName}: Failed to update lobby, player count: ${players.length}`);
+      }
+    } catch (error) {
+      console.log(`Room ${this.roomName}: Player count updated to ${players.length} (HTTP request failed)`);
+    }
   }
 }
 

@@ -49,6 +49,30 @@ export default class LobbyServer implements Party.Server {
     }
   }
 
+  async onRequest(request: Party.Request) {
+    // Handle HTTP POST requests from rooms
+    if (request.method === 'POST') {
+      try {
+        const body = await request.json() as { type: string; data?: any };
+        
+        if (body.type === "update-player-count") {
+          await this.handleUpdatePlayerCount(body.data);
+          return new Response(JSON.stringify({ success: true }), {
+            headers: { 'Content-Type': 'application/json' }
+          });
+        }
+      } catch (error) {
+        console.error("Error handling HTTP request:", error);
+        return new Response(JSON.stringify({ error: "Invalid request" }), {
+          status: 400,
+          headers: { 'Content-Type': 'application/json' }
+        });
+      }
+    }
+    
+    return new Response("Not found", { status: 404 });
+  }
+
   private async handleCreateRoom(data: { name: string; maxPlayers?: number }, sender: Party.Connection) {
     const roomId = this.generateRoomId();
     const roomInfo: RoomInfo = {
