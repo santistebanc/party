@@ -8,7 +8,6 @@ declare const PARTYKIT_HOST: string;
 interface RoomInfo {
   id: string;
   name: string;
-  playerCount: number;
   maxPlayers: number;
   createdAt: number;
 }
@@ -294,7 +293,7 @@ function RoomsList({
           <div key={room.id} className="room-item">
             <div className="room-info">
               <h4>{room.name}</h4>
-              <p>Players: {room.playerCount}/{room.maxPlayers}</p>
+              <p>Max Players: {room.maxPlayers}</p>
               <p>Created: {new Date(room.createdAt).toLocaleTimeString()}</p>
             </div>
             <button 

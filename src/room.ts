@@ -98,9 +98,6 @@ export default class RoomServer implements Party.Server {
 
     // Send updated room info to all players
     await this.broadcastRoomInfo();
-    
-    // Update player count in lobby
-    await this.updateLobbyPlayerCount();
   }
 
   private async handleLeave(sender: Party.Connection) {
@@ -132,8 +129,7 @@ export default class RoomServer implements Party.Server {
       // Send updated room info to all players
       await this.broadcastRoomInfo();
       
-      // Update player count in lobby
-      await this.updateLobbyPlayerCount();
+
     }
   }
 
@@ -195,24 +191,7 @@ export default class RoomServer implements Party.Server {
     return players.sort((a, b) => a.joinedAt - b.joinedAt); // Sort by join time (oldest first)
   }
 
-  private async updateLobbyPlayerCount() {
-    const players = await this.getAllPlayers();
-    const roomId = this.roomName.replace('room-', '');
-    
-    try {
-      // Store the player count in a shared location that lobby can access
-      // We'll use a special key format that both parties understand
-      await this.room.storage.put(`shared:room:${roomId}:playerCount`, {
-        roomId: roomId,
-        playerCount: players.length,
-        timestamp: Date.now()
-      });
-      
-      console.log(`Room ${this.roomName}: Player count updated to ${players.length} (stored in shared location)`);
-    } catch (error) {
-      console.log(`Room ${this.roomName}: Player count updated to ${players.length} (storage failed)`);
-    }
-  }
+
 }
 
 RoomServer satisfies Party.Worker; 

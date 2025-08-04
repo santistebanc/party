@@ -3,13 +3,12 @@ import type * as Party from "partykit/server";
 interface RoomInfo {
   id: string;
   name: string;
-  playerCount: number;
   maxPlayers: number;
   createdAt: number;
 }
 
 interface LobbyMessage {
-  type: "create-room" | "join-room" | "list-rooms" | "room-created" | "room-joined" | "rooms-list" | "update-player-count" | "clear-storage";
+  type: "create-room" | "join-room" | "list-rooms" | "room-created" | "room-joined" | "rooms-list" | "clear-storage";
   data?: any;
 }
 
@@ -37,9 +36,7 @@ export default class LobbyServer implements Party.Server {
         case "list-rooms":
           await this.sendRoomsList(sender);
           break;
-        case "update-player-count":
-          await this.handleUpdatePlayerCount(parsedMessage.data);
-          break;
+
         case "clear-storage":
           await this.handleClearStorage(sender);
           break;
@@ -54,7 +51,6 @@ export default class LobbyServer implements Party.Server {
     const roomInfo: RoomInfo = {
       id: roomId,
       name: data.name,
-      playerCount: 0,
       maxPlayers: data.maxPlayers || 4,
       createdAt: Date.now()
     };
@@ -89,17 +85,7 @@ export default class LobbyServer implements Party.Server {
     }
   }
 
-  private async handleUpdatePlayerCount(data: { roomId: string; playerCount: number }) {
-    const roomInfo = await this.room.storage.get<RoomInfo>(`room:${data.roomId}`);
-    
-    if (roomInfo) {
-      roomInfo.playerCount = data.playerCount;
-      await this.room.storage.put(`room:${data.roomId}`, roomInfo);
-      
-      // Broadcast updated rooms list to all connections
-      await this.broadcastRoomsList();
-    }
-  }
+
 
   private async handleClearStorage(sender: Party.Connection) {
     const keys = await this.room.storage.list();
@@ -147,21 +133,6 @@ export default class LobbyServer implements Party.Server {
       if (key.startsWith('room:')) {
         const roomInfo = await this.room.storage.get<RoomInfo>(key);
         if (roomInfo) {
-          // Check for shared storage updates from rooms
-          const sharedKey = `shared:room:${roomInfo.id}:playerCount`;
-          const sharedUpdate = await this.room.storage.get<{roomId: string; playerCount: number; timestamp: number}>(sharedKey);
-          
-          if (sharedUpdate && sharedUpdate.playerCount !== undefined) {
-            // Update the room info with the new player count
-            roomInfo.playerCount = sharedUpdate.playerCount;
-            await this.room.storage.put(key, roomInfo);
-            
-            // Clean up the shared storage key
-            await this.room.storage.delete(sharedKey);
-            
-            console.log(`Lobby: Updated room ${roomInfo.id} player count to ${sharedUpdate.playerCount}`);
-          }
-          
           rooms.push(roomInfo);
         }
       }
