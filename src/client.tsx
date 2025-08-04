@@ -496,6 +496,8 @@ function App() {
   const [currentRoom, setCurrentRoom] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [directJoinRoom, setDirectJoinRoom] = useState<string | null>(null);
+  const [isChangingName, setIsChangingName] = useState(false);
+  const [newName, setNewName] = useState('');
   const userId = getUserId();
 
   // Check for room parameter in URL on mount
@@ -537,10 +539,29 @@ function App() {
 
 
 
-  const handleClearPlayerName = () => {
-    setPlayerName("");
-    // Remove from localStorage
-    localStorage.removeItem('partykit-player-name');
+  const handleChangeName = () => {
+    setIsChangingName(true);
+    setNewName(playerName);
+  };
+
+  const handleSaveName = () => {
+    if (newName.trim()) {
+      setPlayerName(newName.trim());
+      localStorage.setItem('partykit-player-name', newName.trim());
+    }
+    setIsChangingName(false);
+    setNewName('');
+  };
+
+  const handleCancelName = () => {
+    setIsChangingName(false);
+    setNewName('');
+  };
+
+  const handleGenerateRandomName = () => {
+    const randomName = generateRandomName();
+    setPlayerName(randomName);
+    localStorage.setItem('partykit-player-name', randomName);
   };
 
   const handleCreateRoom = (name: string) => {
@@ -616,13 +637,59 @@ function App() {
       <div className="main-content">
                   <div className="lobby-section">
             <div className="player-info">
-              <p><strong>Player:</strong> {playerName}</p>
+              <p>
+                <strong>Player:</strong> 
+                {isChangingName ? (
+                  <span className="inline-name-edit">
+                    <input
+                      type="text"
+                      value={newName}
+                      onChange={(e) => setNewName(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && newName.trim()) {
+                          handleSaveName();
+                        } else if (e.key === 'Escape') {
+                          handleCancelName();
+                        }
+                      }}
+                      className="inline-name-input"
+                      autoFocus
+                    />
+                    <button 
+                      onClick={handleSaveName} 
+                      className="btn btn-primary btn-small"
+                      disabled={!newName.trim()}
+                      title="Save name"
+                    >
+                      ✓
+                    </button>
+                    <button 
+                      onClick={handleCancelName} 
+                      className="btn btn-secondary btn-small"
+                      title="Cancel"
+                    >
+                      ✕
+                    </button>
+                  </span>
+                ) : (
+                  <span className="player-name-display">
+                    {playerName}
+                    <button 
+                      onClick={handleChangeName} 
+                      className="btn btn-secondary btn-small"
+                      title="Change name"
+                    >
+                      ✏️
+                    </button>
+                  </span>
+                )}
+              </p>
               <p className="user-id"><strong>ID:</strong> {userId}</p>
               <button 
-                onClick={handleClearPlayerName} 
+                onClick={handleGenerateRandomName} 
                 className="btn btn-secondary"
               >
-                Change Name
+                Generate Random Name
               </button>
             </div>
             

@@ -692,3 +692,59 @@ body {
     margin-bottom: 0;
   }
 }
+
+/* Inline name editing styles */
+.inline-name-edit {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-left: 0.5rem;
+}
+
+.inline-name-input {
+  padding: 0.25rem 0.5rem;
+  border: 2px solid #667eea;
+  border-radius: 4px;
+  font-size: 1rem;
+  background: #fff;
+  color: #333;
+  min-width: 120px;
+  transition: border-color 0.2s ease;
+}
+
+.inline-name-input:focus {
+  outline: none;
+  border-color: #4c63d2;
+}
+
+.player-name-display {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-left: 0.5rem;
+}
+
+.btn-small {
+  padding: 0.25rem 0.5rem;
+  font-size: 0.8rem;
+  min-width: auto;
+  width: auto;
+}
+
+@media (max-width: 768px) {
+  .inline-name-edit {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.25rem;
+  }
+  
+  .inline-name-input {
+    min-width: 100px;
+  }
+  
+  .player-name-display {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.25rem;
+  }
+}
