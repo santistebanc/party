@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import ReactDOM from 'react-dom/client';
 import PartySocket from "partysocket";
+import QRCode from 'qrcode';
 import "./styles.css";
 
 declare const PARTYKIT_HOST: string;
@@ -8,6 +9,7 @@ declare const PARTYKIT_HOST: string;
 interface RoomInfo {
   id: string;
   name: string;
+  maxPlayers: number;
   createdAt: number;
 }
 
@@ -390,13 +392,15 @@ function Room({
   players, 
   chatMessages, 
   onSendMessage, 
-  onLeaveRoom 
+  onLeaveRoom,
+  roomId
 }: {
   roomName: string;
   players: Player[];
   chatMessages: ChatMessage[];
   onSendMessage: (message: string) => void;
   onLeaveRoom: () => void;
+  roomId: string;
 }) {
   return (
     <div className="room-section">
@@ -410,6 +414,74 @@ function Room({
       <div className="room-content">
         <PlayersList players={players} />
         <Chat messages={chatMessages} onSendMessage={onSendMessage} />
+      </div>
+      
+      <QRCodeDisplay roomId={roomId} />
+    </div>
+  );
+}
+
+// QR Code Component
+function QRCodeDisplay({ roomId }: { roomId: string }) {
+  const [qrDataUrl, setQrDataUrl] = useState<string>('');
+  const [isGenerating, setIsGenerating] = useState(true);
+
+  useEffect(() => {
+    const generateQR = async () => {
+      try {
+        const roomUrl = `${window.location.origin}?room=${roomId}`;
+        const dataUrl = await QRCode.toDataURL(roomUrl, {
+          width: 200,
+          margin: 2,
+          color: {
+            dark: '#000000',
+            light: '#FFFFFF'
+          }
+        });
+        setQrDataUrl(dataUrl);
+      } catch (error) {
+        console.error('Error generating QR code:', error);
+      } finally {
+        setIsGenerating(false);
+      }
+    };
+
+    generateQR();
+  }, [roomId]);
+
+  const copyRoomUrl = () => {
+    const roomUrl = `${window.location.origin}?room=${roomId}`;
+    navigator.clipboard.writeText(roomUrl).then(() => {
+      alert('Room URL copied to clipboard!');
+    }).catch(() => {
+      // Fallback for older browsers
+      const textArea = document.createElement('textarea');
+      textArea.value = roomUrl;
+      document.body.appendChild(textArea);
+      textArea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textArea);
+      alert('Room URL copied to clipboard!');
+    });
+  };
+
+  return (
+    <div className="qr-section">
+      <h4>Share Room</h4>
+      <div className="qr-container">
+        {isGenerating ? (
+          <div className="qr-loading">
+            <div className="loading-spinner"></div>
+            <p>Generating QR code...</p>
+          </div>
+        ) : (
+          <>
+            <img src={qrDataUrl} alt="QR Code" className="qr-code" />
+            <button onClick={copyRoomUrl} className="btn btn-secondary">
+              Copy Room URL
+            </button>
+          </>
+        )}
       </div>
     </div>
   );
@@ -434,7 +506,17 @@ function App() {
   });
   const [currentRoom, setCurrentRoom] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [directJoinRoom, setDirectJoinRoom] = useState<string | null>(null);
   const userId = getUserId();
+
+  // Check for room parameter in URL on mount
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const roomParam = urlParams.get('room');
+    if (roomParam) {
+      setDirectJoinRoom(roomParam);
+    }
+  }, []);
   
   const { rooms, isConnected, createRoom, joinRoom, clearStorage } = useLobbyConnection((roomId) => {
     // When a room is created, automatically navigate to it
@@ -456,6 +538,13 @@ function App() {
       setIsLoading(false);
     }
   }, [isRoomConnected, isLoading]);
+
+  // Handle direct room joining
+  useEffect(() => {
+    if (directJoinRoom && playerName && !currentRoom) {
+      handleJoinRoom(directJoinRoom);
+    }
+  }, [directJoinRoom, playerName, currentRoom]);
 
   const handleSetPlayerName = (name: string) => {
     setPlayerName(name);
@@ -485,6 +574,11 @@ function App() {
     }
     setIsLoading(true);
     setCurrentRoom(roomId);
+    // Clear URL parameter after joining
+    const url = new URL(window.location.href);
+    url.searchParams.delete('room');
+    window.history.replaceState({}, '', url.toString());
+    setDirectJoinRoom(null);
   };
 
   const handleLeaveRoom = () => {
@@ -541,6 +635,7 @@ function App() {
             chatMessages={chatMessages}
             onSendMessage={sendChat}
             onLeaveRoom={handleLeaveRoom}
+            roomId={currentRoom}
           />
         </div>
       </div>
