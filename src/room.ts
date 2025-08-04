@@ -200,28 +200,17 @@ export default class RoomServer implements Party.Server {
     const roomId = this.roomName.replace('room-', '');
     
     try {
-      // Send HTTP request to lobby to update player count
-      const response = await fetch(`/parties/lobby/lobby`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          type: "update-player-count",
-          data: {
-            roomId: roomId,
-            playerCount: players.length
-          }
-        })
+      // Store the player count in a shared location that lobby can access
+      // We'll use a special key format that both parties understand
+      await this.room.storage.put(`shared:room:${roomId}:playerCount`, {
+        roomId: roomId,
+        playerCount: players.length,
+        timestamp: Date.now()
       });
       
-      if (response.ok) {
-        console.log(`Room ${this.roomName}: Player count updated to ${players.length} (sent to lobby)`);
-      } else {
-        console.log(`Room ${this.roomName}: Failed to update lobby, player count: ${players.length}`);
-      }
+      console.log(`Room ${this.roomName}: Player count updated to ${players.length} (stored in shared location)`);
     } catch (error) {
-      console.log(`Room ${this.roomName}: Player count updated to ${players.length} (HTTP request failed)`);
+      console.log(`Room ${this.roomName}: Player count updated to ${players.length} (storage failed)`);
     }
   }
 }

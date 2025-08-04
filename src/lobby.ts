@@ -49,30 +49,6 @@ export default class LobbyServer implements Party.Server {
     }
   }
 
-  async onRequest(request: Party.Request) {
-    // Handle HTTP POST requests from rooms
-    if (request.method === 'POST') {
-      try {
-        const body = await request.json() as { type: string; data?: any };
-        
-        if (body.type === "update-player-count") {
-          await this.handleUpdatePlayerCount(body.data);
-          return new Response(JSON.stringify({ success: true }), {
-            headers: { 'Content-Type': 'application/json' }
-          });
-        }
-      } catch (error) {
-        console.error("Error handling HTTP request:", error);
-        return new Response(JSON.stringify({ error: "Invalid request" }), {
-          status: 400,
-          headers: { 'Content-Type': 'application/json' }
-        });
-      }
-    }
-    
-    return new Response("Not found", { status: 404 });
-  }
-
   private async handleCreateRoom(data: { name: string; maxPlayers?: number }, sender: Party.Connection) {
     const roomId = this.generateRoomId();
     const roomInfo: RoomInfo = {
@@ -171,6 +147,21 @@ export default class LobbyServer implements Party.Server {
       if (key.startsWith('room:')) {
         const roomInfo = await this.room.storage.get<RoomInfo>(key);
         if (roomInfo) {
+          // Check for shared storage updates from rooms
+          const sharedKey = `shared:room:${roomInfo.id}:playerCount`;
+          const sharedUpdate = await this.room.storage.get<{roomId: string; playerCount: number; timestamp: number}>(sharedKey);
+          
+          if (sharedUpdate && sharedUpdate.playerCount !== undefined) {
+            // Update the room info with the new player count
+            roomInfo.playerCount = sharedUpdate.playerCount;
+            await this.room.storage.put(key, roomInfo);
+            
+            // Clean up the shared storage key
+            await this.room.storage.delete(sharedKey);
+            
+            console.log(`Lobby: Updated room ${roomInfo.id} player count to ${sharedUpdate.playerCount}`);
+          }
+          
           rooms.push(roomInfo);
         }
       }
