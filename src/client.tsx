@@ -2,6 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import ReactDOM from 'react-dom/client';
 import PartySocket from "partysocket";
 import QRCode from 'qrcode';
+import { uniqueNamesGenerator, adjectives, animals } from 'unique-names-generator';
+import type { Config } from 'unique-names-generator';
 import "./styles.css";
 
 declare const PARTYKIT_HOST: string;
@@ -194,37 +196,7 @@ function useRoomConnection(roomId: string | null, playerName: string, userId: st
   };
 }
 
-// Player Name Component
-function PlayerNameForm({ onNameSet }: { onNameSet: (name: string) => void }) {
-  const [name, setName] = useState("");
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (name.trim()) {
-      onNameSet(name.trim());
-    }
-  };
-
-  return (
-    <div className="player-info">
-      <form onSubmit={handleSubmit} className="name-form">
-        <input
-          type="text"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          placeholder="Enter your name"
-          className="name-input"
-          required
-          autoComplete="off"
-          autoFocus
-        />
-        <button type="submit" className="btn btn-primary">
-          Set Name
-        </button>
-      </form>
-    </div>
-  );
-}
 
 // Create Room Component
 function CreateRoomForm({ onCreateRoom }: { onCreateRoom: (name: string) => void }) {
@@ -497,12 +469,29 @@ function getUserId(): string {
   return userId;
 }
 
+// Generate random name utility
+function generateRandomName(): string {
+  const config: Config = {
+    dictionaries: [adjectives, animals],
+    separator: '_',
+    length: 2,
+  };
+  return uniqueNamesGenerator(config);
+}
+
 // Main App Component
 function App() {
   const [playerName, setPlayerName] = useState(() => {
-    // Try to get saved name from localStorage
+    // Try to get saved name from localStorage, or generate a random one
     const savedName = localStorage.getItem('partykit-player-name');
-    return savedName || "";
+    if (savedName) {
+      return savedName;
+    } else {
+      // Generate a random name and save it to localStorage
+      const randomName = generateRandomName();
+      localStorage.setItem('partykit-player-name', randomName);
+      return randomName;
+    }
   });
   const [currentRoom, setCurrentRoom] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -541,16 +530,12 @@ function App() {
 
   // Handle direct room joining
   useEffect(() => {
-    if (directJoinRoom && playerName && !currentRoom) {
+    if (directJoinRoom && !currentRoom) {
       handleJoinRoom(directJoinRoom);
     }
-  }, [directJoinRoom, playerName, currentRoom]);
+  }, [directJoinRoom, currentRoom]);
 
-  const handleSetPlayerName = (name: string) => {
-    setPlayerName(name);
-    // Save to localStorage
-    localStorage.setItem('partykit-player-name', name);
-  };
+
 
   const handleClearPlayerName = () => {
     setPlayerName("");
@@ -559,19 +544,11 @@ function App() {
   };
 
   const handleCreateRoom = (name: string) => {
-    if (!playerName) {
-      alert("Please set your name first!");
-      return;
-    }
     setIsLoading(true);
     createRoom(name);
   };
 
   const handleJoinRoom = (roomId: string) => {
-    if (!playerName) {
-      alert("Please set your name first!");
-      return;
-    }
     setIsLoading(true);
     setCurrentRoom(roomId);
     // Clear URL parameter after joining
@@ -587,20 +564,7 @@ function App() {
     setIsLoading(false);
   };
 
-  if (!playerName) {
-    return (
-      <div className="container">
-        <header className="header">
-          <h1>🎈 PartyKit Lobby</h1>
-          <p>Create and join rooms to start partying!</p>
-        </header>
-        
-        <div className="main-content">
-          <PlayerNameForm onNameSet={handleSetPlayerName} />
-        </div>
-      </div>
-    );
-  }
+
 
   if (isLoading) {
     return (

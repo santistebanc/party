@@ -558,12 +558,7 @@ body {
 }
 
 /* React-specific styles */
-.name-form {
-  display: flex;
-  gap: 15px;
-  align-items: center;
-  flex-wrap: wrap;
-}
+
 
 .player-info p {
   margin: 0;
