@@ -11,6 +11,7 @@ interface RoomInfo {
 
 interface LobbyMessage {
   type: 'rooms-list' | 'room-created' | 'clear-storage';
+  data?: any;
   rooms?: RoomInfo[];
   roomId?: string;
 }
@@ -19,11 +20,23 @@ export function useLobbyConnection(onRoomCreated?: (roomId: string) => void) {
   const [rooms, setRooms] = useState<RoomInfo[]>([]);
   const [isConnected, setIsConnected] = useState(false);
   const socketRef = useRef<PartySocket | null>(null);
+  const onRoomCreatedRef = useRef(onRoomCreated);
+
+  // Update the ref when the callback changes
+  useEffect(() => {
+    onRoomCreatedRef.current = onRoomCreated;
+  }, [onRoomCreated]);
 
   useEffect(() => {
+    // Don't create a new connection if one already exists
+    if (socketRef.current) {
+      return;
+    }
+
     const socket = new PartySocket({
       host: PARTYKIT_HOST,
-      party: 'lobby'
+      party: 'lobby',
+      room: 'lobby'
     });
 
     socketRef.current = socket;
@@ -44,13 +57,17 @@ export function useLobbyConnection(onRoomCreated?: (roomId: string) => void) {
         
         switch (message.type) {
           case 'rooms-list':
-            if (message.rooms) {
+            if (message.data) {
+              setRooms(message.data);
+            } else if (message.rooms) {
               setRooms(message.rooms);
             }
             break;
           case 'room-created':
-            if (message.roomId && onRoomCreated) {
-              onRoomCreated(message.roomId);
+            if (message.data && message.data.id && onRoomCreatedRef.current) {
+              onRoomCreatedRef.current(message.data.id);
+            } else if (message.roomId && onRoomCreatedRef.current) {
+              onRoomCreatedRef.current(message.roomId);
             }
             break;
         }
@@ -60,15 +77,18 @@ export function useLobbyConnection(onRoomCreated?: (roomId: string) => void) {
     });
 
     return () => {
-      socket.close();
+      if (socketRef.current) {
+        socketRef.current.close();
+        socketRef.current = null;
+      }
     };
-  }, [onRoomCreated]);
+  }, []); // Empty dependency array - only run once
 
   const createRoom = (name: string) => {
     if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) {
       socketRef.current.send(JSON.stringify({
         type: 'create-room',
-        name
+        data: { name }
       }));
     }
   };
@@ -77,7 +97,7 @@ export function useLobbyConnection(onRoomCreated?: (roomId: string) => void) {
     if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) {
       socketRef.current.send(JSON.stringify({
         type: 'join-room',
-        roomId
+        data: { roomId }
       }));
     }
   };

@@ -16,11 +16,8 @@ interface ChatMessage {
 }
 
 interface RoomMessage {
-  type: 'players-list' | 'chat-message' | 'player-joined' | 'player-left' | 'room-name';
-  players?: Player[];
-  message?: ChatMessage;
-  player?: Player;
-  roomName?: string;
+  type: 'room-info' | 'chat' | 'player-joined' | 'player-left';
+  data?: any;
 }
 
 export function useRoomConnection(roomId: string | null, playerName: string, userId: string) {
@@ -31,6 +28,12 @@ export function useRoomConnection(roomId: string | null, playerName: string, use
   const socketRef = useRef<PartySocket | null>(null);
 
   useEffect(() => {
+    // Clean up previous connection
+    if (socketRef.current) {
+      socketRef.current.close();
+      socketRef.current = null;
+    }
+
     if (!roomId) {
       setIsConnected(false);
       return;
@@ -68,43 +71,39 @@ export function useRoomConnection(roomId: string | null, playerName: string, use
         const message: RoomMessage = JSON.parse(event.data);
         
         switch (message.type) {
-          case 'players-list':
-            if (message.players) {
-              setPlayers(message.players);
+          case 'room-info':
+            if (message.data) {
+              setRoomName(message.data.roomName);
+              setPlayers(message.data.players || []);
             }
             break;
-          case 'chat-message':
-            if (message.message) {
-              setChatMessages(prev => [...prev, message.message!]);
+          case 'chat':
+            if (message.data) {
+              setChatMessages(prev => [...prev, message.data]);
             }
             break;
           case 'player-joined':
-            if (message.player) {
+            if (message.data && message.data.player) {
               // Only show system message if it's not the current user
-              if (message.player.id !== userId) {
+              if (message.data.player.userId !== userId) {
                 setChatMessages(prev => [...prev, {
                   player: 'System',
-                  message: `${message.player.name} joined the room`,
+                  message: `${message.data.player.name} joined the room`,
                   timestamp: Date.now()
                 }]);
               }
             }
             break;
           case 'player-left':
-            if (message.player) {
+            if (message.data && message.data.player) {
               // Only show system message if it's not the current user
-              if (message.player.id !== userId) {
+              if (message.data.player.userId !== userId) {
                 setChatMessages(prev => [...prev, {
                   player: 'System',
-                  message: `${message.player.name} left the room`,
+                  message: `${message.data.player.name} left the room`,
                   timestamp: Date.now()
                 }]);
               }
-            }
-            break;
-          case 'room-name':
-            if (message.roomName) {
-              setRoomName(message.roomName);
             }
             break;
         }
@@ -114,7 +113,10 @@ export function useRoomConnection(roomId: string | null, playerName: string, use
     });
 
     return () => {
-      socket.close();
+      if (socketRef.current) {
+        socketRef.current.close();
+        socketRef.current = null;
+      }
     };
   }, [roomId, playerName, userId]);
 
@@ -122,7 +124,7 @@ export function useRoomConnection(roomId: string | null, playerName: string, use
     if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) {
       socketRef.current.send(JSON.stringify({
         type: 'chat',
-        message
+        data: { message }
       }));
     }
   };
