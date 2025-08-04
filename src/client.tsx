@@ -8,7 +8,6 @@ declare const PARTYKIT_HOST: string;
 interface RoomInfo {
   id: string;
   name: string;
-  maxPlayers: number;
   createdAt: number;
 }
 
@@ -63,11 +62,11 @@ function useLobbyConnection(onRoomCreated?: (roomId: string) => void) {
     };
   }, []);
 
-  const createRoom = (name: string, maxPlayers: number) => {
+  const createRoom = (name: string) => {
     if (socketRef.current) {
       socketRef.current.send(JSON.stringify({
         type: "create-room",
-        data: { name, maxPlayers }
+        data: { name }
       }));
     }
   };
@@ -226,14 +225,13 @@ function PlayerNameForm({ onNameSet }: { onNameSet: (name: string) => void }) {
 }
 
 // Create Room Component
-function CreateRoomForm({ onCreateRoom }: { onCreateRoom: (name: string, maxPlayers: number) => void }) {
+function CreateRoomForm({ onCreateRoom }: { onCreateRoom: (name: string) => void }) {
   const [roomName, setRoomName] = useState("");
-  const [maxPlayers, setMaxPlayers] = useState(4);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (roomName.trim()) {
-      onCreateRoom(roomName.trim(), maxPlayers);
+      onCreateRoom(roomName.trim());
       setRoomName("");
     }
   };
@@ -250,16 +248,6 @@ function CreateRoomForm({ onCreateRoom }: { onCreateRoom: (name: string, maxPlay
           className="room-input"
           required
         />
-        <select
-          value={maxPlayers}
-          onChange={(e) => setMaxPlayers(Number(e.target.value))}
-          className="room-input"
-        >
-          <option value={2}>2 players</option>
-          <option value={4}>4 players</option>
-          <option value={6}>6 players</option>
-          <option value={8}>8 players</option>
-        </select>
         <button type="submit" className="btn btn-success">
           Create Room
         </button>
@@ -293,7 +281,6 @@ function RoomsList({
           <div key={room.id} className="room-item">
             <div className="room-info">
               <h4>{room.name}</h4>
-              <p>Max Players: {room.maxPlayers}</p>
               <p>Created: {new Date(room.createdAt).toLocaleTimeString()}</p>
             </div>
             <button 
@@ -482,13 +469,13 @@ function App() {
     localStorage.removeItem('partykit-player-name');
   };
 
-  const handleCreateRoom = (name: string, maxPlayers: number) => {
+  const handleCreateRoom = (name: string) => {
     if (!playerName) {
       alert("Please set your name first!");
       return;
     }
     setIsLoading(true);
-    createRoom(name, maxPlayers);
+    createRoom(name);
   };
 
   const handleJoinRoom = (roomId: string) => {

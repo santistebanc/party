@@ -3,7 +3,6 @@ import type * as Party from "partykit/server";
 interface RoomInfo {
   id: string;
   name: string;
-  maxPlayers: number;
   createdAt: number;
 }
 
@@ -46,12 +45,11 @@ export default class LobbyServer implements Party.Server {
     }
   }
 
-  private async handleCreateRoom(data: { name: string; maxPlayers?: number }, sender: Party.Connection) {
+  private async handleCreateRoom(data: { name: string }, sender: Party.Connection) {
     const roomId = this.generateRoomId();
     const roomInfo: RoomInfo = {
       id: roomId,
       name: data.name,
-      maxPlayers: data.maxPlayers || 4,
       createdAt: Date.now()
     };
 
