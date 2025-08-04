@@ -26,7 +26,7 @@ interface ChatMessage {
 }
 
 // Custom hook for lobby connection
-function useLobbyConnection() {
+function useLobbyConnection(onRoomCreated?: (roomId: string) => void) {
   const [rooms, setRooms] = useState<RoomInfo[]>([]);
   const [isConnected, setIsConnected] = useState(false);
   const socketRef = useRef<PartySocket | null>(null);
@@ -35,6 +35,7 @@ function useLobbyConnection() {
     const socket = new PartySocket({
       host: PARTYKIT_HOST,
       room: "lobby",
+      party: "lobby",
     });
 
     socket.addEventListener("open", () => {
@@ -48,6 +49,8 @@ function useLobbyConnection() {
           setRooms(message.data);
         } else if (message.type === "storage-cleared") {
           alert(message.data.message);
+        } else if (message.type === "room-created" && onRoomCreated) {
+          onRoomCreated(message.data.id);
         }
       } catch (error) {
         console.error("Error parsing lobby message:", error);
@@ -101,10 +104,11 @@ function useRoomConnection(roomId: string | null, playerName: string, userId: st
   useEffect(() => {
     if (!roomId || !playerName) return;
 
-    const socket = new PartySocket({
-      host: PARTYKIT_HOST,
-      room: `room-${roomId}`,
-    });
+                    const socket = new PartySocket({
+                  host: PARTYKIT_HOST,
+                  room: `room-${roomId}`,
+                  party: "room",
+                });
 
     socket.addEventListener("open", () => {
       setIsConnected(true);
@@ -446,7 +450,11 @@ function App() {
   const [isLoading, setIsLoading] = useState(false);
   const userId = getUserId();
   
-  const { rooms, isConnected, createRoom, joinRoom, clearStorage } = useLobbyConnection();
+  const { rooms, isConnected, createRoom, joinRoom, clearStorage } = useLobbyConnection((roomId) => {
+    // When a room is created, automatically navigate to it
+    setCurrentRoom(roomId);
+    setIsLoading(false);
+  });
   const { 
     players, 
     chatMessages, 
