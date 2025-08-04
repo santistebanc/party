@@ -3,6 +3,7 @@ import type * as Party from "partykit/server";
 interface Player {
   id: string;
   name: string;
+  userId: string;
   joinedAt: number;
 }
 
@@ -49,27 +50,51 @@ export default class RoomServer implements Party.Server {
     await this.handleLeave(conn);
   }
 
-  private async handleJoin(data: { name: string }, sender: Party.Connection) {
-    const player: Player = {
-      id: sender.id,
-      name: data.name,
-      joinedAt: Date.now()
-    };
-
-    // Store player in PartyKit storage
-    await this.room.storage.put(`player:${sender.id}`, player);
+  private async handleJoin(data: { name: string; userId?: string }, sender: Party.Connection) {
+    const userId = data.userId || sender.id;
     
-    // Notify the sender that they joined
-    sender.send(JSON.stringify({
-      type: "player-joined",
-      data: { player, roomName: this.roomName }
-    }));
+    // Check if this user is already in the room
+    const existingPlayers = await this.getAllPlayers();
+    const existingPlayer = existingPlayers.find(p => p.userId === userId);
+    
+    if (existingPlayer) {
+      // User is already in the room, just update the connection
+      console.log(`User ${existingPlayer.name} (${userId}) already in room, updating connection`);
+      
+      // Update the existing player's connection ID
+      await this.room.storage.delete(`player:${existingPlayer.id}`);
+      existingPlayer.id = sender.id; // Update to new connection ID
+      await this.room.storage.put(`player:${sender.id}`, existingPlayer);
+      
+      // Notify the sender that they joined (but don't broadcast to others since they're already there)
+      sender.send(JSON.stringify({
+        type: "player-joined",
+        data: { player: existingPlayer, roomName: this.roomName }
+      }));
+    } else {
+      // New player joining
+      const player: Player = {
+        id: sender.id,
+        name: data.name,
+        userId: userId,
+        joinedAt: Date.now()
+      };
 
-    // Broadcast to all other players
-    this.room.broadcast(JSON.stringify({
-      type: "player-joined",
-      data: { player, roomName: this.roomName }
-    }), [sender.id]);
+      // Store player in PartyKit storage
+      await this.room.storage.put(`player:${sender.id}`, player);
+      
+      // Notify the sender that they joined
+      sender.send(JSON.stringify({
+        type: "player-joined",
+        data: { player, roomName: this.roomName }
+      }));
+
+      // Broadcast to all other players
+      this.room.broadcast(JSON.stringify({
+        type: "player-joined",
+        data: { player, roomName: this.roomName }
+      }), [sender.id]);
+    }
 
     // Send updated room info to all players
     await this.broadcastRoomInfo();
@@ -82,14 +107,27 @@ export default class RoomServer implements Party.Server {
     const player = await this.room.storage.get<Player>(`player:${sender.id}`);
     
     if (player) {
-      // Remove player from storage
-      await this.room.storage.delete(`player:${sender.id}`);
+      // Check if this user has another connection in the room
+      const allPlayers = await this.getAllPlayers();
+      const otherConnections = allPlayers.filter(p => 
+        p.userId === player.userId && p.id !== sender.id
+      );
       
-      // Broadcast to all other players
-      this.room.broadcast(JSON.stringify({
-        type: "player-left",
-        data: { player, roomName: this.roomName }
-      }), [sender.id]);
+      if (otherConnections.length > 0) {
+        // User has another connection, just remove this one
+        console.log(`User ${player.name} (${player.userId}) has other connections, removing only this one`);
+        await this.room.storage.delete(`player:${sender.id}`);
+      } else {
+        // This is the user's last connection, remove them completely
+        console.log(`User ${player.name} (${player.userId}) leaving room completely`);
+        await this.room.storage.delete(`player:${sender.id}`);
+        
+        // Broadcast to all other players
+        this.room.broadcast(JSON.stringify({
+          type: "player-left",
+          data: { player, roomName: this.roomName }
+        }), [sender.id]);
+      }
 
       // Send updated room info to all players
       await this.broadcastRoomInfo();

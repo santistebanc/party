@@ -46,6 +46,8 @@ function useLobbyConnection() {
         const message = JSON.parse(event.data);
         if (message.type === "rooms-list") {
           setRooms(message.data);
+        } else if (message.type === "storage-cleared") {
+          alert(message.data.message);
         }
       } catch (error) {
         console.error("Error parsing lobby message:", error);
@@ -77,11 +79,19 @@ function useLobbyConnection() {
     }
   };
 
-  return { rooms, isConnected, createRoom, joinRoom };
+  const clearStorage = () => {
+    if (socketRef.current && confirm("Are you sure you want to clear all rooms? This action cannot be undone.")) {
+      socketRef.current.send(JSON.stringify({
+        type: "clear-storage"
+      }));
+    }
+  };
+
+  return { rooms, isConnected, createRoom, joinRoom, clearStorage };
 }
 
 // Custom hook for room connection
-function useRoomConnection(roomId: string | null, playerName: string) {
+function useRoomConnection(roomId: string | null, playerName: string, userId: string) {
   const [players, setPlayers] = useState<Player[]>([]);
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [isConnected, setIsConnected] = useState(false);
@@ -98,10 +108,10 @@ function useRoomConnection(roomId: string | null, playerName: string) {
 
     socket.addEventListener("open", () => {
       setIsConnected(true);
-      // Join the room
+      // Join the room with user ID
       socket.send(JSON.stringify({
         type: "join",
-        data: { name: playerName }
+        data: { name: playerName, userId }
       }));
     });
 
@@ -115,18 +125,24 @@ function useRoomConnection(roomId: string | null, playerName: string) {
             setRoomName(message.data.roomName);
             break;
           case "player-joined":
-            setChatMessages(prev => [...prev, {
-              player: "System",
-              message: `${message.data.player.name} joined the room`,
-              timestamp: Date.now()
-            }]);
+            // Only show join message if it's not the current user
+            if (message.data.player.userId !== userId) {
+              setChatMessages(prev => [...prev, {
+                player: "System",
+                message: `${message.data.player.name} joined the room`,
+                timestamp: Date.now()
+              }]);
+            }
             break;
           case "player-left":
-            setChatMessages(prev => [...prev, {
-              player: "System",
-              message: `${message.data.player.name} left the room`,
-              timestamp: Date.now()
-            }]);
+            // Only show leave message if it's not the current user
+            if (message.data.player.userId !== userId) {
+              setChatMessages(prev => [...prev, {
+                player: "System",
+                message: `${message.data.player.name} left the room`,
+                timestamp: Date.now()
+              }]);
+            }
             break;
           case "chat":
             setChatMessages(prev => [...prev, {
@@ -195,6 +211,8 @@ function PlayerNameForm({ onNameSet }: { onNameSet: (name: string) => void }) {
           placeholder="Enter your name"
           className="name-input"
           required
+          autoComplete="off"
+          autoFocus
         />
         <button type="submit" className="btn btn-primary">
           Set Name
@@ -298,6 +316,7 @@ function Chat({
 }) {
   const [inputMessage, setInputMessage] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -312,6 +331,8 @@ function Chat({
     if (inputMessage.trim()) {
       onSendMessage(inputMessage);
       setInputMessage("");
+      // Keep focus on input for mobile
+      setTimeout(() => inputRef.current?.focus(), 100);
     }
   };
 
@@ -334,11 +355,13 @@ function Chat({
       </div>
       <form onSubmit={handleSubmit} className="chat-input-container">
         <input
+          ref={inputRef}
           type="text"
           value={inputMessage}
           onChange={(e) => setInputMessage(e.target.value)}
           placeholder="Type a message..."
           className="chat-input"
+          autoComplete="off"
         />
         <button type="submit" className="btn btn-primary">
           Send
@@ -402,12 +425,28 @@ function Room({
   );
 }
 
+// Generate or retrieve user ID
+function getUserId(): string {
+  let userId = localStorage.getItem('partykit-user-id');
+  if (!userId) {
+    userId = 'user_' + Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+    localStorage.setItem('partykit-user-id', userId);
+  }
+  return userId;
+}
+
 // Main App Component
 function App() {
-  const [playerName, setPlayerName] = useState("");
+  const [playerName, setPlayerName] = useState(() => {
+    // Try to get saved name from localStorage
+    const savedName = localStorage.getItem('partykit-player-name');
+    return savedName || "";
+  });
   const [currentRoom, setCurrentRoom] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const userId = getUserId();
   
-  const { rooms, isConnected, createRoom, joinRoom } = useLobbyConnection();
+  const { rooms, isConnected, createRoom, joinRoom, clearStorage } = useLobbyConnection();
   const { 
     players, 
     chatMessages, 
@@ -415,13 +454,33 @@ function App() {
     roomName, 
     sendChat, 
     leaveRoom 
-  } = useRoomConnection(currentRoom, playerName);
+  } = useRoomConnection(currentRoom, playerName, userId);
+
+  // Clear loading state when room is connected
+  useEffect(() => {
+    if (isRoomConnected && isLoading) {
+      setIsLoading(false);
+    }
+  }, [isRoomConnected, isLoading]);
+
+  const handleSetPlayerName = (name: string) => {
+    setPlayerName(name);
+    // Save to localStorage
+    localStorage.setItem('partykit-player-name', name);
+  };
+
+  const handleClearPlayerName = () => {
+    setPlayerName("");
+    // Remove from localStorage
+    localStorage.removeItem('partykit-player-name');
+  };
 
   const handleCreateRoom = (name: string, maxPlayers: number) => {
     if (!playerName) {
       alert("Please set your name first!");
       return;
     }
+    setIsLoading(true);
     createRoom(name, maxPlayers);
   };
 
@@ -430,12 +489,14 @@ function App() {
       alert("Please set your name first!");
       return;
     }
+    setIsLoading(true);
     setCurrentRoom(roomId);
   };
 
   const handleLeaveRoom = () => {
     leaveRoom();
     setCurrentRoom(null);
+    setIsLoading(false);
   };
 
   if (!playerName) {
@@ -447,7 +508,25 @@ function App() {
         </header>
         
         <div className="main-content">
-          <PlayerNameForm onNameSet={setPlayerName} />
+          <PlayerNameForm onNameSet={handleSetPlayerName} />
+        </div>
+      </div>
+    );
+  }
+
+  if (isLoading) {
+    return (
+      <div className="container">
+        <header className="header">
+          <h1>🎈 PartyKit Lobby</h1>
+          <p>Loading...</p>
+        </header>
+        
+        <div className="main-content">
+          <div className="loading-section">
+            <div className="loading-spinner"></div>
+            <p>Connecting to room...</p>
+          </div>
         </div>
       </div>
     );
@@ -482,20 +561,31 @@ function App() {
       </header>
       
       <div className="main-content">
-        <div className="lobby-section">
-          <div className="player-info">
-            <p><strong>Player:</strong> {playerName}</p>
-            <button 
-              onClick={() => setPlayerName("")} 
-              className="btn btn-secondary"
-            >
-              Change Name
-            </button>
+                  <div className="lobby-section">
+            <div className="player-info">
+              <p><strong>Player:</strong> {playerName}</p>
+              <p className="user-id"><strong>ID:</strong> {userId}</p>
+              <button 
+                onClick={handleClearPlayerName} 
+                className="btn btn-secondary"
+              >
+                Change Name
+              </button>
+            </div>
+            
+            <CreateRoomForm onCreateRoom={handleCreateRoom} />
+            <RoomsList rooms={rooms} onJoinRoom={handleJoinRoom} />
+            
+            <div className="admin-section">
+              <h3>Admin Tools</h3>
+              <button 
+                onClick={clearStorage} 
+                className="btn btn-danger"
+              >
+                Clear All Rooms
+              </button>
+            </div>
           </div>
-          
-          <CreateRoomForm onCreateRoom={handleCreateRoom} />
-          <RoomsList rooms={rooms} onJoinRoom={handleJoinRoom} />
-        </div>
       </div>
     </div>
   );

@@ -9,7 +9,7 @@ interface RoomInfo {
 }
 
 interface LobbyMessage {
-  type: "create-room" | "join-room" | "list-rooms" | "room-created" | "room-joined" | "rooms-list" | "update-player-count";
+  type: "create-room" | "join-room" | "list-rooms" | "room-created" | "room-joined" | "rooms-list" | "update-player-count" | "clear-storage";
   data?: any;
 }
 
@@ -39,6 +39,9 @@ export default class LobbyServer implements Party.Server {
           break;
         case "update-player-count":
           await this.handleUpdatePlayerCount(parsedMessage.data);
+          break;
+        case "clear-storage":
+          await this.handleClearStorage(sender);
           break;
       }
     } catch (error) {
@@ -96,6 +99,28 @@ export default class LobbyServer implements Party.Server {
       // Broadcast updated rooms list to all connections
       await this.broadcastRoomsList();
     }
+  }
+
+  private async handleClearStorage(sender: Party.Connection) {
+    const keys = await this.room.storage.list();
+    
+    // Delete all room entries
+    for (const [key] of keys) {
+      if (key.startsWith('room:')) {
+        await this.room.storage.delete(key);
+      }
+    }
+    
+    console.log('Storage cleared by', sender.id);
+    
+    // Notify the sender that storage was cleared
+    sender.send(JSON.stringify({
+      type: "storage-cleared",
+      data: { message: "Storage cleared successfully" }
+    }));
+    
+    // Broadcast updated rooms list to all connections
+    await this.broadcastRoomsList();
   }
 
   private async sendRoomsList(conn: Party.Connection) {
