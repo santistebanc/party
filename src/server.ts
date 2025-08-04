@@ -1,30 +1,53 @@
 import type * as Party from "partykit/server";
+import LobbyServer from "./lobby";
+import RoomServer from "./room";
 
 export default class Server implements Party.Server {
   constructor(readonly room: Party.Room) {}
 
-  onConnect(conn: Party.Connection, ctx: Party.ConnectionContext) {
-    // A websocket just connected!
-    console.log(
-      `Connected:
-  id: ${conn.id}
-  room: ${this.room.id}
-  url: ${new URL(ctx.request.url).pathname}`
-    );
-
-    // let's send a message to the connection
-    conn.send("hello from server");
+  async onConnect(conn: Party.Connection, ctx: Party.ConnectionContext) {
+    // Route to appropriate server based on room name
+    const roomName = this.room.id;
+    
+    if (roomName === "lobby") {
+      const lobbyServer = new LobbyServer(this.room);
+      await lobbyServer.onConnect(conn, ctx);
+    } else if (roomName.startsWith("room-")) {
+      const roomServer = new RoomServer(this.room);
+      await roomServer.onConnect(conn, ctx);
+    } else {
+      // Default behavior for other rooms
+      console.log(`Connected to room: ${roomName}`);
+      conn.send("hello from server");
+    }
   }
 
-  onMessage(message: string, sender: Party.Connection) {
-    // let's log the message
-    console.log(`connection ${sender.id} sent message: ${message}`);
-    // as well as broadcast it to all the other connections in the room...
-    this.room.broadcast(
-      `${sender.id}: ${message}`,
-      // ...except for the connection it came from
-      [sender.id]
-    );
+  async onMessage(message: string, sender: Party.Connection) {
+    const roomName = this.room.id;
+    
+    if (roomName === "lobby") {
+      const lobbyServer = new LobbyServer(this.room);
+      await lobbyServer.onMessage(message, sender);
+    } else if (roomName.startsWith("room-")) {
+      const roomServer = new RoomServer(this.room);
+      await roomServer.onMessage(message, sender);
+    } else {
+      // Default behavior for other rooms
+      console.log(`connection ${sender.id} sent message: ${message}`);
+      this.room.broadcast(
+        `${sender.id}: ${message}`,
+        [sender.id]
+      );
+    }
+  }
+
+  async onClose(conn: Party.Connection) {
+    const roomName = this.room.id;
+    
+    if (roomName.startsWith("room-")) {
+      const roomServer = new RoomServer(this.room);
+      await roomServer.onClose(conn);
+    }
   }
 }
 

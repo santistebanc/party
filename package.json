@@ -7,9 +7,15 @@
     "deploy": "partykit deploy"
   },
   "dependencies": {
-    "partysocket": "^1.0.2"
+    "@types/react": "^19.1.9",
+    "@types/react-dom": "^19.1.7",
+    "partysocket": "^1.0.2",
+    "react": "^19.1.1",
+    "react-dom": "^19.1.1"
   },
   "devDependencies": {
+    "@babel/preset-react": "^7.27.1",
+    "@babel/preset-typescript": "^7.27.1",
     "partykit": "^0.0.110",
     "typescript": "^5.5.4"
   }

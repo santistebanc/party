@@ -5,6 +5,10 @@
   "compatibilityDate": "2025-08-04",
   "serve": {
     "path": "public",
-    "build": "src/client.ts"
+    "build": "src/client.tsx"
+  },
+  "parties": {
+    "lobby": "src/lobby.ts",
+    "room": "src/room.ts"
   }
 }
