@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Plus, Users, ArrowRight } from 'lucide-react';
 
 interface CreateRoomFormProps {
   onCreateRoom: () => void;
@@ -17,34 +18,25 @@ export function CreateRoomForm({ onCreateRoom, onJoinRoom }: CreateRoomFormProps
   };
 
   return (
-    <div className="create-room-section">
-      <div className="room-actions">
-        <button 
-          onClick={onCreateRoom} 
-          className="btn btn-primary create-room-btn"
-        >
-          Create Room
-        </button>
-        
-        <div className="join-room-form">
-          <form onSubmit={handleJoinRoom}>
-            <input
-              type="text"
-              value={roomId}
-              onChange={(e) => setRoomId(e.target.value)}
-              placeholder="Enter room ID..."
-              className="room-input"
-              maxLength={6}
-            />
-            <button 
-              type="submit" 
-              className="btn btn-success"
-              disabled={!roomId.trim()}
-            >
-              Join Room
-            </button>
-          </form>
-        </div>
+    <div className="room-actions">
+      <button onClick={onCreateRoom} className="create-room-btn">
+        <Plus size={18} /> Create Room
+      </button>
+      
+      <div className="join-room-form">
+        <form onSubmit={handleJoinRoom}>
+          <input
+            type="text"
+            value={roomId}
+            onChange={(e) => setRoomId(e.target.value)}
+            placeholder="Enter room ID..."
+            className="room-input"
+            maxLength={6}
+          />
+          <button type="submit" className="btn btn-primary">
+            <ArrowRight size={16} /> Join Room
+          </button>
+        </form>
       </div>
     </div>
   );

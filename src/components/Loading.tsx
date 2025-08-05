@@ -1,12 +1,14 @@
 import React from 'react';
+import { PlayerHeader } from './PlayerHeader';
 
-export function Loading() {
+interface LoadingProps {
+  playerName: string;
+}
+
+export function Loading({ playerName }: LoadingProps) {
   return (
     <div className="container">
-      <header className="header">
-        <h1>🎈 PartyKit Lobby</h1>
-        <p>Loading...</p>
-      </header>
+      <PlayerHeader playerName={playerName} />
       
       <div className="main-content">
         <div className="loading-section">

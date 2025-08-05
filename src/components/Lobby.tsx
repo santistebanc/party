@@ -1,5 +1,5 @@
 import React from 'react';
-import { PlayerInfo } from './PlayerInfo';
+import { PlayerHeader } from './PlayerHeader';
 import { CreateRoomForm } from './CreateRoomForm';
 
 interface RoomInfo {
@@ -11,8 +11,8 @@ interface LobbyProps {
   playerName: string;
   userId: string;
   rooms: RoomInfo[];
-  onCreateRoom: () => void;
   onJoinRoom: (roomId: string) => void;
+  onCreateRoom: () => void;
   onPlayerNameChange: (name: string) => void;
 }
 
@@ -20,24 +20,18 @@ export function Lobby({
   playerName,
   userId,
   rooms,
-  onCreateRoom,
   onJoinRoom,
+  onCreateRoom,
   onPlayerNameChange
 }: LobbyProps) {
   return (
     <div className="container">
-      <header className="header">
-        <h1>🎉 PartyKit Lobby</h1>
-      </header>
+      <PlayerHeader 
+        playerName={playerName}
+      />
       
       <div className="main-content">
         <div className="lobby-section">
-          <PlayerInfo
-            playerName={playerName}
-            userId={userId}
-            onPlayerNameChange={onPlayerNameChange}
-          />
-          
           <CreateRoomForm onCreateRoom={onCreateRoom} onJoinRoom={onJoinRoom} />
         </div>
       </div>

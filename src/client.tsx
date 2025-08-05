@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import ReactDOM from 'react-dom/client';
+import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { Lobby } from './components/Lobby';
-import { Room } from './components/Room';
+import { RoomLayout } from './components/RoomLayout';
 import { Loading } from './components/Loading';
 import { useLobbyConnection } from './hooks/useLobbyConnection';
 import { useRoomConnection } from './hooks/useRoomConnection';
@@ -10,7 +11,7 @@ import "./styles.css";
 
 declare const PARTYKIT_HOST: string;
 
-function App() {
+function AppContent() {
   const [playerName, setPlayerName] = useState(() => {
     // Try to get saved name from localStorage, or generate a random one
     const savedName = localStorage.getItem('partykit-player-name');
@@ -23,26 +24,17 @@ function App() {
       return randomName;
     }
   });
-  const [currentRoom, setCurrentRoom] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [directJoinRoom, setDirectJoinRoom] = useState<string | null>(null);
   const userId = getUserId();
+  const navigate = useNavigate();
 
-  // Check for room parameter in URL on mount
-  useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const roomParam = urlParams.get('room');
-    if (roomParam) {
-      setDirectJoinRoom(roomParam);
-    }
-  }, []);
-  
-  const { rooms, isConnected, createRoom, joinRoom, clearStorage } = useLobbyConnection((roomId) => {
-    // When a room is created, automatically navigate to it
-    setCurrentRoom(roomId);
+  const handleRoomCreated = (roomId: string) => {
     setIsLoading(false);
-  });
+    navigate(`/room/${roomId}`);
+  };
 
+  const { rooms, isConnected, createRoom, joinRoom, clearStorage } = useLobbyConnection(handleRoomCreated);
+  
   // Expose clearStorage to window for console access
   React.useEffect(() => {
     (window as any).clearAllRooms = () => {
@@ -59,28 +51,6 @@ function App() {
     console.log('  - Use getAllRooms() to see available rooms');
     console.log('  - Use clearAllRooms() to clear all rooms');
   }, [clearStorage, rooms]);
-  const { 
-    players, 
-    chatMessages, 
-    isConnected: isRoomConnected, 
-    roomId: currentRoomId, 
-    sendChat, 
-    leaveRoom 
-  } = useRoomConnection(currentRoom, playerName, userId);
-
-  // Clear loading state when room is connected
-  useEffect(() => {
-    if (isRoomConnected && isLoading) {
-      setIsLoading(false);
-    }
-  }, [isRoomConnected, isLoading]);
-
-  // Handle direct room joining
-  useEffect(() => {
-    if (directJoinRoom && !currentRoom) {
-      handleJoinRoom(directJoinRoom);
-    }
-  }, [directJoinRoom, currentRoom]);
 
   const handlePlayerNameChange = (newName: string) => {
     setPlayerName(newName);
@@ -94,45 +64,48 @@ function App() {
 
   const handleJoinRoom = (roomId: string) => {
     setIsLoading(true);
-    setCurrentRoom(roomId);
-    // Clear URL parameter after joining
-    const url = new URL(window.location.href);
-    url.searchParams.delete('room');
-    window.history.replaceState({}, '', url.toString());
-    setDirectJoinRoom(null);
-  };
-
-  const handleLeaveRoom = () => {
-    leaveRoom();
-    setCurrentRoom(null);
-    setIsLoading(false);
+    navigate(`/room/${roomId}`);
   };
 
   if (isLoading) {
-    return <Loading />;
-  }
-
-  if (currentRoom) {
-    return (
-      <Room
-        roomId={currentRoom}
-        players={players}
-        chatMessages={chatMessages}
-        onSendMessage={sendChat}
-        onLeaveRoom={handleLeaveRoom}
-      />
-    );
+    return <Loading playerName={playerName} />;
   }
 
   return (
-    <Lobby
-      playerName={playerName}
-      userId={userId}
-      rooms={rooms}
-      onCreateRoom={handleCreateRoom}
-      onJoinRoom={handleJoinRoom}
-      onPlayerNameChange={handlePlayerNameChange}
-    />
+    <Routes>
+      <Route 
+        path="/" 
+        element={
+          <Lobby
+            playerName={playerName}
+            userId={userId}
+            rooms={rooms}
+            onCreateRoom={handleCreateRoom}
+            onJoinRoom={handleJoinRoom}
+            onPlayerNameChange={handlePlayerNameChange}
+          />
+        } 
+      />
+      <Route 
+        path="/room/:roomId/*" 
+        element={
+          <RoomLayout
+            playerName={playerName}
+            userId={userId}
+            onPlayerNameChange={handlePlayerNameChange}
+          />
+        } 
+      />
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
+  );
+}
+
+function App() {
+  return (
+    <Router>
+      <AppContent />
+    </Router>
   );
 }
 

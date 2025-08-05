@@ -10,10 +10,12 @@
     "@types/qrcode": "^1.5.5",
     "@types/react": "^19.1.9",
     "@types/react-dom": "^19.1.7",
+    "lucide-react": "^0.536.0",
     "partysocket": "^1.0.2",
     "qrcode": "^1.5.4",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
+    "react-router-dom": "^7.7.1",
     "unique-names-generator": "^4.7.1"
   },
   "devDependencies": {

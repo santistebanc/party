@@ -1,4 +1,5 @@
 import React from 'react';
+import { User } from 'lucide-react';
 
 interface Player {
   id: string;
@@ -12,26 +13,24 @@ interface PlayersListProps {
 }
 
 export function PlayersList({ players }: PlayersListProps) {
-  const formatDate = (timestamp: number) => {
-    return new Date(timestamp).toLocaleString();
-  };
+  if (players.length === 0) {
+    return (
+      <div className="players-list">
+        <p className="no-players">No players in room</p>
+      </div>
+    );
+  }
 
   return (
     <div className="players-list">
-      {players.length === 0 ? (
-        <div className="no-players">
-          <p>No players in room yet.</p>
-        </div>
-      ) : (
-        players.map((player) => (
-          <div key={player.id} className="player-item">
-            <div className="player-name">{player.name}</div>
-            <div className="player-joined">
-              Joined: {formatDate(player.joinedAt)}
-            </div>
+      {players.map((player) => (
+        <div key={player.id} className="player-item">
+          <div className="player-avatar">
+            <User size={12} />
           </div>
-        ))
-      )}
+          <span className="player-name">{player.name}</span>
+        </div>
+      ))}
     </div>
   );
 } 

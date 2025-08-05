@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
+import { Send } from 'lucide-react';
 
 interface Player {
   id: string;
@@ -8,18 +9,20 @@ interface Player {
 }
 
 interface ChatMessage {
-  type: "chat" | "system";
-  player?: Player;
+  id: string;
+  type: 'chat' | 'system';
   message: string;
+  player?: Player;
   timestamp: number;
 }
 
 interface ChatProps {
   messages: ChatMessage[];
   onSendMessage: (message: string) => void;
+  isConnected: boolean;
 }
 
-export function Chat({ messages, onSendMessage }: ChatProps) {
+export function Chat({ messages, onSendMessage, isConnected }: ChatProps) {
   const [newMessage, setNewMessage] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -33,46 +36,61 @@ export function Chat({ messages, onSendMessage }: ChatProps) {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (newMessage.trim()) {
+    if (newMessage.trim() && isConnected) {
       onSendMessage(newMessage.trim());
       setNewMessage('');
     }
   };
 
   const formatTime = (timestamp: number) => {
-    return new Date(timestamp).toLocaleTimeString();
+    return new Date(timestamp).toLocaleTimeString([], { 
+      hour: '2-digit', 
+      minute: '2-digit' 
+    });
   };
 
   return (
-    <div className="chat-container">
+    <div className="chat-section">
       <div className="chat-messages">
-        {messages.map((msg, index) => (
-          <div
-            key={index}
-            className={`chat-message ${msg.type}`}
-          >
-            <span className="timestamp">{formatTime(msg.timestamp)}</span>
-            {msg.type === 'chat' && msg.player && (
-              <span className="player-name">{msg.player.name}:</span>
+        {messages.map((msg) => (
+          <div key={msg.id} className={`chat-message ${msg.type}`}>
+            {msg.type === 'chat' && msg.player ? (
+              <>
+                <span className="player-name">{msg.player.name}</span>
+                <span className="timestamp">{formatTime(msg.timestamp)}</span>
+                <span className="message-text">{msg.message}</span>
+              </>
+            ) : (
+              <>
+                <span className="player-name">System</span>
+                <span className="timestamp">{formatTime(msg.timestamp)}</span>
+                <span className="message-text">{msg.message}</span>
+              </>
             )}
-            <span className="message-text">{msg.message}</span>
           </div>
         ))}
         <div ref={messagesEndRef} />
       </div>
       
-      <form onSubmit={handleSubmit} className="chat-input-container">
-        <input
-          type="text"
-          value={newMessage}
-          onChange={(e) => setNewMessage(e.target.value)}
-          placeholder="Type your message..."
-          className="chat-input"
-        />
-        <button type="submit" className="btn btn-primary">
-          Send
-        </button>
-      </form>
+      <div className="chat-input-section">
+        <form onSubmit={handleSubmit} className="chat-input-form">
+          <input
+            type="text"
+            value={newMessage}
+            onChange={(e) => setNewMessage(e.target.value)}
+            placeholder="Type a message..."
+            className="chat-input"
+            disabled={!isConnected}
+          />
+          <button 
+            type="submit" 
+            className="chat-send-btn"
+            disabled={!newMessage.trim() || !isConnected}
+          >
+            <Send size={16} />
+          </button>
+        </form>
+      </div>
     </div>
   );
 } 
