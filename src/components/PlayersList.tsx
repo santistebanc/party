@@ -3,6 +3,7 @@ import React from 'react';
 interface Player {
   id: string;
   name: string;
+  userId: string;
   joinedAt: number;
 }
 

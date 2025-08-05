@@ -2,7 +2,6 @@ import React from 'react';
 
 interface RoomInfo {
   id: string;
-  name: string;
   createdAt: number;
 }
 
@@ -19,28 +18,28 @@ export function RoomsList({ rooms, onJoinRoom }: RoomsListProps) {
   return (
     <div className="rooms-section">
       <h3>🚪 Available Rooms</h3>
-      <div className="rooms-list">
-        {rooms.length === 0 ? (
-          <div className="no-rooms">
-            <p>No rooms available. Create one to get started!</p>
-          </div>
-        ) : (
-          rooms.map((room) => (
+      {rooms.length === 0 ? (
+        <div className="no-rooms">
+          <p>No rooms available. Create one to get started!</p>
+        </div>
+      ) : (
+        <div className="rooms-list">
+          {rooms.map((room) => (
             <div key={room.id} className="room-item">
               <div className="room-info">
-                <h4>{room.name}</h4>
+                <h4>{room.id}</h4>
                 <p>Created: {formatDate(room.createdAt)}</p>
               </div>
-              <button
-                onClick={() => onJoinRoom(room.id)}
+              <button 
+                onClick={() => onJoinRoom(room.id)} 
                 className="btn btn-success join-btn"
               >
                 Join Room
               </button>
             </div>
-          ))
-        )}
-      </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 } 

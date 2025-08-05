@@ -1,36 +1,51 @@
 import React, { useState } from 'react';
 
 interface CreateRoomFormProps {
-  onCreateRoom: (name: string) => void;
+  onCreateRoom: () => void;
+  onJoinRoom: (roomId: string) => void;
 }
 
-export function CreateRoomForm({ onCreateRoom }: CreateRoomFormProps) {
-  const [roomName, setRoomName] = useState('');
+export function CreateRoomForm({ onCreateRoom, onJoinRoom }: CreateRoomFormProps) {
+  const [roomId, setRoomId] = useState('');
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleJoinRoom = (e: React.FormEvent) => {
     e.preventDefault();
-    if (roomName.trim()) {
-      onCreateRoom(roomName.trim());
-      setRoomName('');
+    if (roomId.trim()) {
+      onJoinRoom(roomId.trim().toUpperCase());
+      setRoomId('');
     }
   };
 
   return (
     <div className="create-room-section">
-      <h3>🏠 Create New Room</h3>
-      <form onSubmit={handleSubmit} className="create-room-form">
-        <input
-          type="text"
-          value={roomName}
-          onChange={(e) => setRoomName(e.target.value)}
-          placeholder="Enter room name..."
-          className="room-input"
-          required
-        />
-        <button type="submit" className="btn btn-primary">
+      <div className="room-actions">
+        <button 
+          onClick={onCreateRoom} 
+          className="btn btn-primary create-room-btn"
+        >
           Create Room
         </button>
-      </form>
+        
+        <div className="join-room-form">
+          <form onSubmit={handleJoinRoom}>
+            <input
+              type="text"
+              value={roomId}
+              onChange={(e) => setRoomId(e.target.value)}
+              placeholder="Enter room ID..."
+              className="room-input"
+              maxLength={6}
+            />
+            <button 
+              type="submit" 
+              className="btn btn-success"
+              disabled={!roomId.trim()}
+            >
+              Join Room
+            </button>
+          </form>
+        </div>
+      </div>
     </div>
   );
 } 

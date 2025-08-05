@@ -1,7 +1,15 @@
 import React, { useState, useEffect, useRef } from 'react';
 
+interface Player {
+  id: string;
+  name: string;
+  userId: string;
+  joinedAt: number;
+}
+
 interface ChatMessage {
-  player: string;
+  type: "chat" | "system";
+  player?: Player;
   message: string;
   timestamp: number;
 }
@@ -41,12 +49,12 @@ export function Chat({ messages, onSendMessage }: ChatProps) {
         {messages.map((msg, index) => (
           <div
             key={index}
-            className={`chat-message ${
-              msg.player === 'System' ? 'system' : 'player'
-            }`}
+            className={`chat-message ${msg.type}`}
           >
             <span className="timestamp">{formatTime(msg.timestamp)}</span>
-            <span className="player-name">{msg.player}:</span>
+            {msg.type === 'chat' && msg.player && (
+              <span className="player-name">{msg.player.name}:</span>
+            )}
             <span className="message-text">{msg.message}</span>
           </div>
         ))}

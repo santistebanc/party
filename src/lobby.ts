@@ -2,7 +2,6 @@ import type * as Party from "partykit/server";
 
 interface RoomInfo {
   id: string;
-  name: string;
   createdAt: number;
 }
 
@@ -27,7 +26,7 @@ export default class LobbyServer implements Party.Server {
       
       switch (parsedMessage.type) {
         case "create-room":
-          await this.handleCreateRoom(parsedMessage.data, sender);
+          await this.handleCreateRoom(sender);
           break;
         case "join-room":
           await this.handleJoinRoom(parsedMessage.data, sender);
@@ -35,7 +34,6 @@ export default class LobbyServer implements Party.Server {
         case "list-rooms":
           await this.sendRoomsList(sender);
           break;
-
         case "clear-storage":
           await this.handleClearStorage(sender);
           break;
@@ -45,11 +43,10 @@ export default class LobbyServer implements Party.Server {
     }
   }
 
-  private async handleCreateRoom(data: { name: string }, sender: Party.Connection) {
+  private async handleCreateRoom(sender: Party.Connection) {
     const roomId = this.generateRoomId();
     const roomInfo: RoomInfo = {
       id: roomId,
-      name: data.name,
       createdAt: Date.now()
     };
 
@@ -83,8 +80,6 @@ export default class LobbyServer implements Party.Server {
     }
   }
 
-
-
   private async handleClearStorage(sender: Party.Connection) {
     const keys = await this.room.storage.list();
     
@@ -100,32 +95,32 @@ export default class LobbyServer implements Party.Server {
     // Notify the sender that storage was cleared
     sender.send(JSON.stringify({
       type: "storage-cleared",
-      data: { message: "Storage cleared successfully" }
+      data: "Storage cleared successfully"
     }));
-    
+
     // Broadcast updated rooms list to all connections
     await this.broadcastRoomsList();
   }
 
   private async sendRoomsList(conn: Party.Connection) {
-    const roomsList = await this.getAllRooms();
+    const rooms = await this.getAllRooms();
     conn.send(JSON.stringify({
       type: "rooms-list",
-      data: roomsList
+      data: rooms
     }));
   }
 
   private async broadcastRoomsList() {
-    const roomsList = await this.getAllRooms();
+    const rooms = await this.getAllRooms();
     this.room.broadcast(JSON.stringify({
       type: "rooms-list",
-      data: roomsList
+      data: rooms
     }));
   }
 
   private async getAllRooms(): Promise<RoomInfo[]> {
-    const rooms: RoomInfo[] = [];
     const keys = await this.room.storage.list();
+    const rooms: RoomInfo[] = [];
     
     for (const [key] of keys) {
       if (key.startsWith('room:')) {
@@ -136,11 +131,17 @@ export default class LobbyServer implements Party.Server {
       }
     }
     
-    return rooms.sort((a, b) => b.createdAt - a.createdAt); // Sort by newest first
+    return rooms.sort((a, b) => b.createdAt - a.createdAt);
   }
 
   private generateRoomId(): string {
-    return Math.random().toString(36).substring(2, 8).toUpperCase();
+    // Generate a 6-character alphanumeric ID
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    let result = '';
+    for (let i = 0; i < 6; i++) {
+      result += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return result;
   }
 }
 

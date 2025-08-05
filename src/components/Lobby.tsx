@@ -1,12 +1,9 @@
-import React, { useState } from 'react';
-import { CreateRoomForm } from './CreateRoomForm';
-import { RoomsList } from './RoomsList';
+import React from 'react';
 import { PlayerInfo } from './PlayerInfo';
-import { AdminTools } from './AdminTools';
+import { CreateRoomForm } from './CreateRoomForm';
 
 interface RoomInfo {
   id: string;
-  name: string;
   createdAt: number;
 }
 
@@ -14,10 +11,8 @@ interface LobbyProps {
   playerName: string;
   userId: string;
   rooms: RoomInfo[];
+  onCreateRoom: () => void;
   onJoinRoom: (roomId: string) => void;
-  onCreateRoom: (name: string) => void;
-  onClearStorage: () => void;
-  onGenerateRandomName: () => void;
   onPlayerNameChange: (name: string) => void;
 }
 
@@ -25,17 +20,14 @@ export function Lobby({
   playerName,
   userId,
   rooms,
-  onJoinRoom,
   onCreateRoom,
-  onClearStorage,
-  onGenerateRandomName,
+  onJoinRoom,
   onPlayerNameChange
 }: LobbyProps) {
   return (
     <div className="container">
       <header className="header">
-        <h1>🎈 PartyKit Lobby</h1>
-        <p>Create and join rooms to start partying!</p>
+        <h1>🎉 PartyKit Lobby</h1>
       </header>
       
       <div className="main-content">
@@ -44,13 +36,9 @@ export function Lobby({
             playerName={playerName}
             userId={userId}
             onPlayerNameChange={onPlayerNameChange}
-            onGenerateRandomName={onGenerateRandomName}
           />
           
-          <CreateRoomForm onCreateRoom={onCreateRoom} />
-          <RoomsList rooms={rooms} onJoinRoom={onJoinRoom} />
-          
-          <AdminTools onClearStorage={onClearStorage} />
+          <CreateRoomForm onCreateRoom={onCreateRoom} onJoinRoom={onJoinRoom} />
         </div>
       </div>
     </div>

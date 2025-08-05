@@ -6,11 +6,13 @@ declare const PARTYKIT_HOST: string;
 interface Player {
   id: string;
   name: string;
+  userId: string;
   joinedAt: number;
 }
 
 interface ChatMessage {
-  player: string;
+  type: "chat" | "system";
+  player?: Player;
   message: string;
   timestamp: number;
 }
@@ -24,7 +26,7 @@ export function useRoomConnection(roomId: string | null, playerName: string, use
   const [players, setPlayers] = useState<Player[]>([]);
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [isConnected, setIsConnected] = useState(false);
-  const [roomName, setRoomName] = useState('');
+  const [currentRoomId, setCurrentRoomId] = useState('');
   const socketRef = useRef<PartySocket | null>(null);
 
   useEffect(() => {
@@ -73,13 +75,18 @@ export function useRoomConnection(roomId: string | null, playerName: string, use
         switch (message.type) {
           case 'room-info':
             if (message.data) {
-              setRoomName(message.data.roomName);
+              setCurrentRoomId(message.data.roomId);
               setPlayers(message.data.players || []);
             }
             break;
           case 'chat':
             if (message.data) {
-              setChatMessages(prev => [...prev, message.data]);
+              setChatMessages(prev => [...prev, {
+                type: 'chat',
+                player: message.data.player,
+                message: message.data.message,
+                timestamp: message.data.timestamp
+              }]);
             }
             break;
           case 'player-joined':
@@ -87,7 +94,7 @@ export function useRoomConnection(roomId: string | null, playerName: string, use
               // Only show system message if it's not the current user
               if (message.data.player.userId !== userId) {
                 setChatMessages(prev => [...prev, {
-                  player: 'System',
+                  type: 'system',
                   message: `${message.data.player.name} joined the room`,
                   timestamp: Date.now()
                 }]);
@@ -99,7 +106,7 @@ export function useRoomConnection(roomId: string | null, playerName: string, use
               // Only show system message if it's not the current user
               if (message.data.player.userId !== userId) {
                 setChatMessages(prev => [...prev, {
-                  player: 'System',
+                  type: 'system',
                   message: `${message.data.player.name} left the room`,
                   timestamp: Date.now()
                 }]);
@@ -142,7 +149,7 @@ export function useRoomConnection(roomId: string | null, playerName: string, use
     players,
     chatMessages,
     isConnected,
-    roomName,
+    roomId: currentRoomId,
     sendChat,
     leaveRoom
   };

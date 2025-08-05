@@ -13,14 +13,10 @@ interface RoomMessage {
 }
 
 export default class RoomServer implements Party.Server {
-  private roomName: string;
-
-  constructor(readonly room: Party.Room) {
-    this.roomName = this.room.id;
-  }
+  constructor(readonly room: Party.Room) {}
 
   async onConnect(conn: Party.Connection, ctx: Party.ConnectionContext) {
-    console.log(`Room ${this.roomName}: ${conn.id} connected`);
+    console.log(`Room ${this.room.id}: ${conn.id} connected`);
     
     // Send room info to the new connection
     await this.sendRoomInfo(conn);
@@ -69,7 +65,7 @@ export default class RoomServer implements Party.Server {
       // Notify the sender that they joined (but don't broadcast to others since they're already there)
       sender.send(JSON.stringify({
         type: "player-joined",
-        data: { player: existingPlayer, roomName: this.roomName }
+        data: { player: existingPlayer, roomId: this.room.id }
       }));
     } else {
       // New player joining
@@ -86,13 +82,13 @@ export default class RoomServer implements Party.Server {
       // Notify the sender that they joined
       sender.send(JSON.stringify({
         type: "player-joined",
-        data: { player, roomName: this.roomName }
+        data: { player, roomId: this.room.id }
       }));
 
       // Broadcast to all other players
       this.room.broadcast(JSON.stringify({
         type: "player-joined",
-        data: { player, roomName: this.roomName }
+        data: { player, roomId: this.room.id }
       }), [sender.id]);
     }
 
@@ -104,33 +100,24 @@ export default class RoomServer implements Party.Server {
     const player = await this.room.storage.get<Player>(`player:${sender.id}`);
     
     if (player) {
-      // Check if this user has another connection in the room
-      const allPlayers = await this.getAllPlayers();
-      const otherConnections = allPlayers.filter(p => 
-        p.userId === player.userId && p.id !== sender.id
-      );
+      // Remove player from storage
+      await this.room.storage.delete(`player:${sender.id}`);
       
-      if (otherConnections.length > 0) {
-        // User has another connection, just remove this one
-        console.log(`User ${player.name} (${player.userId}) has other connections, removing only this one`);
-        await this.room.storage.delete(`player:${sender.id}`);
-      } else {
-        // This is the user's last connection, remove them completely
-        console.log(`User ${player.name} (${player.userId}) leaving room completely`);
-        await this.room.storage.delete(`player:${sender.id}`);
-        
-        // Broadcast to all other players
+      // Check if this user has other connections in the room
+      const allPlayers = await this.getAllPlayers();
+      const userConnections = allPlayers.filter(p => p.userId === player.userId);
+      
+      // Only broadcast player-left if this was their last connection
+      if (userConnections.length === 0) {
         this.room.broadcast(JSON.stringify({
           type: "player-left",
-          data: { player, roomName: this.roomName }
-        }), [sender.id]);
+          data: { player, roomId: this.room.id }
+        }));
       }
-
-      // Send updated room info to all players
-      await this.broadcastRoomInfo();
-      
-
     }
+
+    // Send updated room info to all remaining players
+    await this.broadcastRoomInfo();
   }
 
   private async handleChat(data: { message: string }, sender: Party.Connection) {
@@ -138,46 +125,45 @@ export default class RoomServer implements Party.Server {
     
     if (player) {
       const chatMessage = {
-        player: player.name,
-        message: data.message,
-        timestamp: Date.now()
-      };
-
-      // Broadcast chat message to all players
-      this.room.broadcast(JSON.stringify({
         type: "chat",
-        data: chatMessage
-      }));
+        data: {
+          message: data.message,
+          player: player,
+          timestamp: Date.now()
+        }
+      };
+      
+      this.room.broadcast(JSON.stringify(chatMessage));
     }
   }
 
   private async sendRoomInfo(conn: Party.Connection) {
     const players = await this.getAllPlayers();
+    
     conn.send(JSON.stringify({
       type: "room-info",
       data: {
-        roomName: this.roomName,
-        players,
-        playerCount: players.length
+        roomId: this.room.id,
+        players: players
       }
     }));
   }
 
   private async broadcastRoomInfo() {
     const players = await this.getAllPlayers();
+    
     this.room.broadcast(JSON.stringify({
       type: "room-info",
       data: {
-        roomName: this.roomName,
-        players,
-        playerCount: players.length
+        roomId: this.room.id,
+        players: players
       }
     }));
   }
 
   private async getAllPlayers(): Promise<Player[]> {
-    const players: Player[] = [];
     const keys = await this.room.storage.list();
+    const players: Player[] = [];
     
     for (const [key] of keys) {
       if (key.startsWith('player:')) {
@@ -188,10 +174,8 @@ export default class RoomServer implements Party.Server {
       }
     }
     
-    return players.sort((a, b) => a.joinedAt - b.joinedAt); // Sort by join time (oldest first)
+    return players.sort((a, b) => a.joinedAt - b.joinedAt);
   }
-
-
 }
 
 RoomServer satisfies Party.Worker; 

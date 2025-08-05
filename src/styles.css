@@ -87,9 +87,43 @@ body {
   font-size: 1.5rem;
 }
 
-.create-room-form {
+.create-room-btn {
+  padding: 15px 30px;
+  font-size: 16px;
+  font-weight: 600;
+  border: none;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+}
+
+.create-room-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+}
+
+.create-room-btn:active {
+  transform: translateY(0);
+}
+
+.room-actions {
   display: flex;
-  gap: 15px;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.join-room-form {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.join-room-form form {
+  display: flex;
+  gap: 10px;
   align-items: center;
   flex-wrap: wrap;
 }
@@ -99,7 +133,8 @@ body {
   border: 2px solid #e9ecef;
   border-radius: 8px;
   font-size: 16px;
-  min-width: 150px;
+  min-width: 120px;
+  text-transform: uppercase;
   transition: border-color 0.3s ease;
 }
 
@@ -367,11 +402,7 @@ body {
     padding: 20px;
   }
   
-  .create-room-form {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 12px;
-  }
+
   
   .room-content {
     grid-template-columns: 1fr;
@@ -428,7 +459,6 @@ body {
   }
   
   .name-input,
-  .room-input,
   .chat-input {
     font-size: 16px; /* Prevent zoom on iOS */
     padding: 14px 16px;

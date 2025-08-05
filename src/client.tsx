@@ -42,11 +42,28 @@ function App() {
     setCurrentRoom(roomId);
     setIsLoading(false);
   });
+
+  // Expose clearStorage to window for console access
+  React.useEffect(() => {
+    (window as any).clearAllRooms = () => {
+      console.log('Clearing all rooms...');
+      clearStorage();
+    };
+    
+    (window as any).getAllRooms = () => {
+      console.log('Available rooms:', rooms);
+      return rooms;
+    };
+    
+    console.log('💡 Developer tips:');
+    console.log('  - Use getAllRooms() to see available rooms');
+    console.log('  - Use clearAllRooms() to clear all rooms');
+  }, [clearStorage, rooms]);
   const { 
     players, 
     chatMessages, 
     isConnected: isRoomConnected, 
-    roomName, 
+    roomId: currentRoomId, 
     sendChat, 
     leaveRoom 
   } = useRoomConnection(currentRoom, playerName, userId);
@@ -70,15 +87,9 @@ function App() {
     localStorage.setItem('partykit-player-name', newName);
   };
 
-  const handleGenerateRandomName = () => {
-    const randomName = generateRandomName();
-    setPlayerName(randomName);
-    localStorage.setItem('partykit-player-name', randomName);
-  };
-
-  const handleCreateRoom = (name: string) => {
+  const handleCreateRoom = () => {
     setIsLoading(true);
-    createRoom(name);
+    createRoom();
   };
 
   const handleJoinRoom = (roomId: string) => {
@@ -104,12 +115,11 @@ function App() {
   if (currentRoom) {
     return (
       <Room
-        roomName={roomName}
+        roomId={currentRoom}
         players={players}
         chatMessages={chatMessages}
         onSendMessage={sendChat}
         onLeaveRoom={handleLeaveRoom}
-        roomId={currentRoom}
       />
     );
   }
@@ -119,10 +129,8 @@ function App() {
       playerName={playerName}
       userId={userId}
       rooms={rooms}
-      onJoinRoom={handleJoinRoom}
       onCreateRoom={handleCreateRoom}
-      onClearStorage={clearStorage}
-      onGenerateRandomName={handleGenerateRandomName}
+      onJoinRoom={handleJoinRoom}
       onPlayerNameChange={handlePlayerNameChange}
     />
   );

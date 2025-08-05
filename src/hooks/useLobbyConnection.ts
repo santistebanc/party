@@ -5,7 +5,6 @@ declare const PARTYKIT_HOST: string;
 
 interface RoomInfo {
   id: string;
-  name: string;
   createdAt: number;
 }
 
@@ -84,11 +83,10 @@ export function useLobbyConnection(onRoomCreated?: (roomId: string) => void) {
     };
   }, []); // Empty dependency array - only run once
 
-  const createRoom = (name: string) => {
+  const createRoom = () => {
     if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) {
       socketRef.current.send(JSON.stringify({
-        type: 'create-room',
-        data: { name }
+        type: 'create-room'
       }));
     }
   };

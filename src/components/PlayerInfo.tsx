@@ -4,14 +4,12 @@ interface PlayerInfoProps {
   playerName: string;
   userId: string;
   onPlayerNameChange: (name: string) => void;
-  onGenerateRandomName: () => void;
 }
 
 export function PlayerInfo({
   playerName,
   userId,
-  onPlayerNameChange,
-  onGenerateRandomName
+  onPlayerNameChange
 }: PlayerInfoProps) {
   const [isChangingName, setIsChangingName] = useState(false);
   const [newName, setNewName] = useState('');
@@ -84,12 +82,6 @@ export function PlayerInfo({
         )}
       </p>
       <p className="user-id"><strong>ID:</strong> {userId}</p>
-      <button 
-        onClick={onGenerateRandomName} 
-        className="btn btn-secondary"
-      >
-        Generate Random Name
-      </button>
     </div>
   );
 } 

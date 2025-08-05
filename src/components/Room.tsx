@@ -6,43 +6,42 @@ import { QRCodeDisplay } from './QRCodeDisplay';
 interface Player {
   id: string;
   name: string;
+  userId: string;
   joinedAt: number;
 }
 
 interface ChatMessage {
-  player: string;
+  type: "chat" | "system";
+  player?: Player;
   message: string;
   timestamp: number;
 }
 
 interface RoomProps {
-  roomName: string;
+  roomId: string;
   players: Player[];
   chatMessages: ChatMessage[];
   onSendMessage: (message: string) => void;
   onLeaveRoom: () => void;
-  roomId: string;
 }
 
 export function Room({
-  roomName,
+  roomId,
   players,
   chatMessages,
   onSendMessage,
-  onLeaveRoom,
-  roomId
+  onLeaveRoom
 }: RoomProps) {
   return (
     <div className="container">
       <header className="header">
-        <h1>🎈 PartyKit Lobby</h1>
-        <p>Create and join rooms to start partying!</p>
+        <h1>🎉 PartyKit Room</h1>
       </header>
       
       <div className="main-content">
         <div className="room-section">
           <div className="room-header">
-            <h2>🎮 {roomName}</h2>
+            <h2>🎉 {roomId}</h2>
             <button onClick={onLeaveRoom} className="btn btn-danger">
               Leave Room
             </button>
@@ -50,13 +49,14 @@ export function Room({
           
           <div className="room-content">
             <div className="players-section">
-              <h4>👥 Players</h4>
               <PlayersList players={players} />
             </div>
             
             <div className="chat-section">
-              <h4>💬 Chat</h4>
-              <Chat messages={chatMessages} onSendMessage={onSendMessage} />
+              <Chat 
+                messages={chatMessages} 
+                onSendMessage={onSendMessage} 
+              />
             </div>
           </div>
           
