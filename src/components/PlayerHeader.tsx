@@ -1,6 +1,6 @@
 import React from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
 import { Gamepad2, Target, Settings, MessageCircle } from 'lucide-react';
+import { useQueryParams } from '../client';
 
 interface PlayerHeaderProps {
   playerName: string;
@@ -8,10 +8,13 @@ interface PlayerHeaderProps {
 }
 
 export function PlayerHeader({ playerName, roomId }: PlayerHeaderProps) {
-  const navigate = useNavigate();
-  const location = useLocation();
+  const { queryParams, updateQueryParams } = useQueryParams();
 
-  const isInRoom = roomId && location.pathname.startsWith(`/room/${roomId}`);
+  const isInRoom = roomId && queryParams.roomId === roomId;
+
+  const handleNavigation = (view: string) => {
+    updateQueryParams({ roomId, view });
+  };
 
   return (
     <div className="player-header">
@@ -22,29 +25,29 @@ export function PlayerHeader({ playerName, roomId }: PlayerHeaderProps) {
       {isInRoom && (
         <div className="header-navigation">
           <button 
-            onClick={() => navigate(`/room/${roomId}`)} 
-            className={`btn btn-icon ${location.pathname === `/room/${roomId}` ? 'active' : ''}`}
+            onClick={() => handleNavigation('play')} 
+            className={`btn btn-icon ${queryParams.view === 'play' ? 'active' : ''}`}
             title="Play"
           >
             <Gamepad2 size={18} />
           </button>
           <button 
-            onClick={() => navigate(`/room/${roomId}/board`)} 
-            className={`btn btn-icon ${location.pathname === `/room/${roomId}/board` ? 'active' : ''}`}
+            onClick={() => handleNavigation('board')} 
+            className={`btn btn-icon ${queryParams.view === 'board' ? 'active' : ''}`}
             title="Board"
           >
             <Target size={18} />
           </button>
           <button 
-            onClick={() => navigate(`/room/${roomId}/settings`)} 
-            className={`btn btn-icon ${location.pathname === `/room/${roomId}/settings` ? 'active' : ''}`}
+            onClick={() => handleNavigation('settings')} 
+            className={`btn btn-icon ${queryParams.view === 'settings' ? 'active' : ''}`}
             title="Settings"
           >
             <Settings size={18} />
           </button>
           <button 
-            onClick={() => navigate(`/room/${roomId}/chat`)} 
-            className={`btn btn-icon ${location.pathname === `/room/${roomId}/chat` ? 'active' : ''}`}
+            onClick={() => handleNavigation('chat')} 
+            className={`btn btn-icon ${queryParams.view === 'chat' ? 'active' : ''}`}
             title="Chat"
           >
             <MessageCircle size={18} />

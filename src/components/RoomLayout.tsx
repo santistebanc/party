@@ -1,5 +1,4 @@
 import React from 'react';
-import { Routes, Route, useParams, useNavigate } from 'react-router-dom';
 import { RoomPlay } from './RoomPlay';
 import { RoomBoard } from './RoomBoard';
 import { RoomSettings } from './RoomSettings';
@@ -7,16 +6,18 @@ import { RoomChat } from './RoomChat';
 import { PlayerHeader } from './PlayerHeader';
 import { useRoomConnection } from '../hooks/useRoomConnection';
 import { getUserId } from '../utils/userUtils';
+import { useQueryParams } from '../client';
 
 interface RoomLayoutProps {
   playerName: string;
   userId: string;
   onPlayerNameChange: (name: string) => void;
+  onBackToLobby: () => void;
 }
 
-export function RoomLayout({ playerName, userId, onPlayerNameChange }: RoomLayoutProps) {
-  const { roomId } = useParams<{ roomId: string }>();
-  const navigate = useNavigate();
+export function RoomLayout({ playerName, userId, onPlayerNameChange, onBackToLobby }: RoomLayoutProps) {
+  const { queryParams } = useQueryParams();
+  const roomId = queryParams.roomId;
 
   const { 
     players, 
@@ -30,6 +31,51 @@ export function RoomLayout({ playerName, userId, onPlayerNameChange }: RoomLayou
     return <div>Room not found</div>;
   }
 
+  const handleLeaveRoom = () => {
+    leaveRoom();
+    onBackToLobby();
+  };
+
+  const renderContent = () => {
+    switch (queryParams.view) {
+      case 'board':
+        return (
+          <RoomBoard 
+            roomId={roomId}
+            players={players}
+            isConnected={isConnected}
+          />
+        );
+      case 'settings':
+        return (
+          <RoomSettings 
+            roomId={roomId}
+            onPlayerNameChange={onPlayerNameChange}
+            onLeaveRoom={handleLeaveRoom}
+          />
+        );
+      case 'chat':
+        return (
+          <RoomChat 
+            roomId={roomId}
+            players={players}
+            chatMessages={chatMessages}
+            onSendMessage={sendChat}
+            isConnected={isConnected}
+          />
+        );
+      case 'play':
+      default:
+        return (
+          <RoomPlay 
+            roomId={roomId}
+            players={players}
+            isConnected={isConnected}
+          />
+        );
+    }
+  };
+
   return (
     <div className="container">
       <PlayerHeader 
@@ -41,53 +87,7 @@ export function RoomLayout({ playerName, userId, onPlayerNameChange }: RoomLayou
         <div className="room-section">
           <div className="room-content">
             <div className="room-page-content">
-              <Routes>
-                <Route 
-                  path="/" 
-                  element={
-                    <RoomPlay 
-                      roomId={roomId}
-                      players={players}
-                      isConnected={isConnected}
-                    />
-                  } 
-                />
-                <Route 
-                  path="/board" 
-                  element={
-                    <RoomBoard 
-                      roomId={roomId}
-                      players={players}
-                      isConnected={isConnected}
-                    />
-                  } 
-                />
-                <Route 
-                  path="/settings" 
-                  element={
-                    <RoomSettings 
-                      roomId={roomId}
-                      onPlayerNameChange={onPlayerNameChange}
-                      onLeaveRoom={() => {
-                        leaveRoom();
-                        navigate('/');
-                      }}
-                    />
-                  } 
-                />
-                <Route 
-                  path="/chat" 
-                  element={
-                    <RoomChat 
-                      roomId={roomId}
-                      players={players}
-                      chatMessages={chatMessages}
-                      onSendMessage={sendChat}
-                      isConnected={isConnected}
-                    />
-                  } 
-                />
-              </Routes>
+              {renderContent()}
             </div>
           </div>
         </div>

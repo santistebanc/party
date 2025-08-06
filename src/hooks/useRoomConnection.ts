@@ -11,6 +11,7 @@ interface Player {
 }
 
 interface ChatMessage {
+  id: string;
   type: "chat" | "system";
   player?: Player;
   message: string;
@@ -82,6 +83,7 @@ export function useRoomConnection(roomId: string | null, playerName: string, use
           case 'chat':
             if (message.data) {
               setChatMessages(prev => [...prev, {
+                id: `chat-${Date.now()}-${Math.random()}`,
                 type: 'chat',
                 player: message.data.player,
                 message: message.data.message,
@@ -94,11 +96,21 @@ export function useRoomConnection(roomId: string | null, playerName: string, use
               // Only show system message if it's not the current user
               if (message.data.player.userId !== userId) {
                 setChatMessages(prev => [...prev, {
+                  id: `system-${Date.now()}-${Math.random()}`,
                   type: 'system',
                   message: `${message.data.player.name} joined the room`,
                   timestamp: Date.now()
                 }]);
               }
+              
+              // Update players list
+              setPlayers(prev => {
+                const existingPlayer = prev.find(p => p.userId === message.data.player.userId);
+                if (!existingPlayer) {
+                  return [...prev, message.data.player];
+                }
+                return prev;
+              });
             }
             break;
           case 'player-left':
@@ -106,16 +118,20 @@ export function useRoomConnection(roomId: string | null, playerName: string, use
               // Only show system message if it's not the current user
               if (message.data.player.userId !== userId) {
                 setChatMessages(prev => [...prev, {
+                  id: `system-${Date.now()}-${Math.random()}`,
                   type: 'system',
                   message: `${message.data.player.name} left the room`,
                   timestamp: Date.now()
                 }]);
               }
+              
+              // Update players list
+              setPlayers(prev => prev.filter(p => p.userId !== message.data.player.userId));
             }
             break;
         }
       } catch (error) {
-        console.error('Error parsing room message:', error);
+        console.error('Error parsing message:', error);
       }
     });
 
@@ -131,25 +147,27 @@ export function useRoomConnection(roomId: string | null, playerName: string, use
     if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) {
       socketRef.current.send(JSON.stringify({
         type: 'chat',
-        data: { message }
+        data: {
+          message: message
+        }
       }));
     }
   };
 
   const leaveRoom = () => {
-    if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) {
-      socketRef.current.send(JSON.stringify({
-        type: 'leave'
-      }));
+    if (socketRef.current) {
       socketRef.current.close();
+      socketRef.current = null;
     }
+    setIsConnected(false);
+    setPlayers([]);
+    setChatMessages([]);
   };
 
   return {
     players,
     chatMessages,
     isConnected,
-    roomId: currentRoomId,
     sendChat,
     leaveRoom
   };
