@@ -79,14 +79,19 @@ export function RoomPlay({ roomId, players, isConnected, game, actions, currentU
             {players.length === 0 ? (
               <p className="no-players">No players in room</p>
             ) : (
-              players.map((player) => (
-                <div key={player.id} className="player-item">
-                  <div className="player-avatar">
-                    {player.name.charAt(0).toUpperCase()}
+              [...players]
+                .sort((a, b) => (game?.scores?.[b.userId] ?? 0) - (game?.scores?.[a.userId] ?? 0))
+                .map((player) => (
+                  <div key={player.id} className="player-item" style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <div className="player-avatar">
+                        {player.name.charAt(0).toUpperCase()}
+                      </div>
+                      <span className="player-name">{player.name}</span>
+                    </div>
+                    <span aria-label="score">{game?.scores?.[player.userId] ?? 0} pts</span>
                   </div>
-                  <span className="player-name">{player.name}</span>
-                </div>
-              ))
+                ))
             )}
           </div>
         </div>
