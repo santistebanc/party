@@ -83,12 +83,14 @@ export function RoomLayout({ playerName, userId, onPlayerNameChange, onBackToLob
   };
 
   return (
-    <div className="page stack">
+    <>
       <PlayerHeader playerName={playerName} roomId={roomId} />
-      <div className="stack">
-        {renderContent()}
+      <div className="page stack">
+        <div className="stack">
+          {renderContent()}
+        </div>
       </div>
-    </div>
+    </>
   );
 } 
 
