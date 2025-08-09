@@ -106,17 +106,21 @@ function Results({ scores, players, onEnd }: { scores: Record<string, number>; p
 
   const winner = ranking[0];
   return (
-    <div className="section-card center">
-      <div className="title">Winner: {winner?.name || '—'}</div>
-      <div style={{ marginTop: 10 }}>
-        {ranking.map((r, idx) => (
+    <div className="section-card center" style={{ position: 'relative', overflow: 'hidden' }}>
+      {/* Winner confetti */}
+      <Confetti triggerKey={`winner-${winner?.userId || 'none'}`} durationMs={1800} />
+      <div className="title" style={{ fontSize: 28, marginBottom: 8 }}>Winner</div>
+      <div style={{ fontSize: 36, fontWeight: 900 }}>{winner?.name || '—'}</div>
+      <div style={{ opacity: 0.9, marginTop: 4 }}>{winner ? `${winner.score} pts` : ''}</div>
+      <div style={{ marginTop: 16 }}>
+        {ranking.slice(1).map((r, idx) => (
           <div key={r.userId} className="row" style={{ justifyContent: 'space-between', maxWidth: 420, margin: '0 auto' }}>
-            <span>{idx + 1}. {r.name}</span>
+            <span>{idx + 2}. {r.name}</span>
             <span>{r.score} pts</span>
           </div>
         ))}
       </div>
-      <div style={{ marginTop: 10 }}>
+      <div style={{ marginTop: 16 }}>
         <button className="btn" onClick={onEnd}>End game</button>
       </div>
     </div>
