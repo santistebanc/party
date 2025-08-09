@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 
 interface ConfettiProps {
   triggerKey: string | number;
@@ -7,8 +7,11 @@ interface ConfettiProps {
 
 export function Confetti({ triggerKey, durationMs = 1200 }: ConfettiProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const [done, setDone] = useState(false);
 
   useEffect(() => {
+    // reset visibility for a fresh run each trigger
+    setDone(false);
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
@@ -51,6 +54,10 @@ export function Confetti({ triggerKey, durationMs = 1200 }: ConfettiProps) {
       });
       if (elapsed < durationMs) {
         animationId = requestAnimationFrame(render);
+      } else {
+        // final clear to avoid lingering pixels then mark done
+        ctx.clearRect(0, 0, canvas.clientWidth, canvas.clientHeight);
+        setDone(true);
       }
     };
     animationId = requestAnimationFrame(render);
@@ -62,6 +69,7 @@ export function Confetti({ triggerKey, durationMs = 1200 }: ConfettiProps) {
     };
   }, [triggerKey, durationMs]);
 
+  if (done) return null;
   return <canvas ref={canvasRef} className="confetti-canvas" />;
 }
 
