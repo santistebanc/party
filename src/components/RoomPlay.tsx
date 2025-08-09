@@ -17,10 +17,11 @@ interface RoomPlayProps {
   actions?: {
     buzz: () => void;
     submitAnswer: (text: string) => void;
-  }
+  };
+  currentUserId?: string;
 }
 
-export function RoomPlay({ roomId, players, isConnected, game, actions }: RoomPlayProps) {
+export function RoomPlay({ roomId, players, isConnected, game, actions, currentUserId }: RoomPlayProps) {
   return (
     <div className="room-play">
       <div className="play-content">
@@ -34,11 +35,19 @@ export function RoomPlay({ roomId, players, isConnected, game, actions }: RoomPl
           <div className="section-card">
             <div style={{ fontWeight: 700 }}>Q{game.currentIndex + 1}: {game.questions[game.currentIndex]?.text}</div>
             <div className="row" style={{ marginTop: 8 }}>
-              <button className="btn" onClick={() => actions?.buzz()} disabled={!!game.currentResponder}>
+              <button
+                className="btn"
+                onClick={() => actions?.buzz()}
+                disabled={
+                  !isConnected ||
+                  game.status !== 'running' ||
+                  !!(currentUserId && game.buzzQueue?.includes(currentUserId))
+                }
+              >
                 Buzz
               </button>
             </div>
-            {game.currentResponder === (window as any).userId && (
+            {currentUserId && game.currentResponder === currentUserId && (
               <div className="row" style={{ marginTop: 8 }}>
                 <input className="chat-input" placeholder="Your answer" id="player-answer-input" />
                 <button className="btn" onClick={() => {

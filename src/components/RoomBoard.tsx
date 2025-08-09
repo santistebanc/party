@@ -58,7 +58,11 @@ export function RoomBoard({ roomId, players, isConnected, game, actions }: RoomB
                 )}
                 {game.lastResult && (
                   <div style={{ marginTop: 8 }}>
-                    {game.lastResult.correct ? `Correct +${game.lastResult.delta}` : `Wrong ${game.lastResult.delta}`}
+                    {game.lastResult.correct ? (
+                      <span style={{ color: '#0a7f27', fontWeight: 700 }}>Correct +{game.lastResult.delta}</span>
+                    ) : (
+                      <span style={{ color: '#a40000', fontWeight: 700 }}>Wrong {game.lastResult.delta}</span>
+                    )}
                   </div>
                 )}
                 <div style={{ marginTop: 10 }}>

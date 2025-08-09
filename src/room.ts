@@ -256,6 +256,7 @@ export default class RoomServer implements Party.Server {
     const player = await this.room.storage.get<Player>(`player:${sender.id}`);
     if (!player) return;
     const userId = player.userId;
+    // allow everyone to buzz until currentResponder answers
     if (!this.game.buzzQueue.includes(userId)) {
       this.game.buzzQueue.push(userId);
       if (!this.game.currentResponder) {

@@ -76,7 +76,7 @@ export function RoomLayout({ playerName, userId, onPlayerNameChange, onBackToLob
       default:
         return (
           <div className="stack">
-            <RoomPlay roomId={roomId} players={players} isConnected={isConnected} game={game} actions={actions} />
+            <RoomPlay roomId={roomId} players={players} isConnected={isConnected} game={game} actions={actions} currentUserId={userId} />
           </div>
         );
     }
