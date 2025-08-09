@@ -53,25 +53,29 @@ export function RoomBoard({ roomId, players, isConnected, game, actions }: RoomB
         ) : (
           <div className="section-card center">
             {game?.lastResult?.correct && <Confetti triggerKey={`${game.currentIndex}-${game.lastResult.userId}`} />}
-                {game?.status === 'running' && (
+            {(game && (game.status === 'running' || game.status === 'await-next')) && (
               <>
                 <div className="title">Question {game.currentIndex + 1} / {game.questions.length}</div>
                 <div style={{ marginTop: 6, fontSize: 18 }}>{game.questions[game.currentIndex]?.text}</div>
-                    {game.currentResponder ? (
-                      <div style={{ marginTop: 8, fontWeight: 700 }}>Turn: {resolveName(game.currentResponder)}</div>
+                {game.status === 'running' ? (
+                  game.currentResponder ? (
+                    <div style={{ marginTop: 8, fontWeight: 700 }}>Turn: {resolveName(game.currentResponder)}</div>
+                  ) : (
+                    <div style={{ marginTop: 8, color: '#555' }}>Buzz to answer!</div>
+                  )
                 ) : (
-                  <div style={{ marginTop: 8, color: '#555' }}>Buzz to answer!</div>
+                  <div style={{ marginTop: 8, color: '#555' }}>Round complete</div>
                 )}
                 {game.lastResult && (
                   <div style={{ position: 'relative', height: 80, marginTop: 8 }}>
                     <AwardOverlay triggerKey={`${game.currentIndex}-${game.lastResult.userId}-${game.lastResult.delta}`} amount={game.lastResult.delta} />
                   </div>
                 )}
-                <div style={{ marginTop: 10 }}>
-                  {game.status === 'running' ? null : (
+                {game.status === 'await-next' && (
+                  <div style={{ marginTop: 10 }}>
                     <button className="btn" onClick={() => actions?.nextQuestion()}>Next question</button>
-                  )}
-                </div>
+                  </div>
+                )}
               </>
             )}
             {game?.status === 'finished' && (

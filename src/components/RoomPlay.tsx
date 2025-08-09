@@ -1,6 +1,8 @@
 import React from 'react';
 import { Clock, Users } from 'lucide-react';
 import { GameState } from '../hooks/useRoomConnection';
+import { AwardOverlay } from './AwardOverlay';
+import { Confetti } from './Confetti';
 
 interface Player {
   id: string;
@@ -57,6 +59,14 @@ export function RoomPlay({ roomId, players, isConnected, game, actions, currentU
                   if (el) el.value = '';
                 }}>Submit</button>
               </div>
+            )}
+            {game.lastResult && (
+              <div style={{ position: 'relative', height: 80, marginTop: 8 }}>
+                <AwardOverlay triggerKey={`${game.currentIndex}-${game.lastResult.userId}-${game.lastResult.delta}`} amount={game.lastResult.delta} />
+              </div>
+            )}
+            {game.lastResult?.correct && (
+              <Confetti triggerKey={`${game.currentIndex}-${game.lastResult.userId}`} />
             )}
           </div>
         )}
