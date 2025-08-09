@@ -2,6 +2,7 @@ import React from 'react';
 import { Play, Users } from 'lucide-react';
 import { GameState } from '../hooks/useRoomConnection';
 import { Confetti } from './Confetti';
+import { AwardOverlay } from './AwardOverlay';
 
 interface Player {
   id: string;
@@ -57,12 +58,8 @@ export function RoomBoard({ roomId, players, isConnected, game, actions }: RoomB
                   <div style={{ marginTop: 8, color: '#555' }}>Buzz to answer!</div>
                 )}
                 {game.lastResult && (
-                  <div style={{ marginTop: 8 }}>
-                    {game.lastResult.correct ? (
-                      <span style={{ color: '#0a7f27', fontWeight: 700 }}>Correct +{game.lastResult.delta}</span>
-                    ) : (
-                      <span style={{ color: '#a40000', fontWeight: 700 }}>Wrong {game.lastResult.delta}</span>
-                    )}
+                  <div style={{ position: 'relative', height: 80, marginTop: 8 }}>
+                    <AwardOverlay triggerKey={`${game.currentIndex}-${game.lastResult.userId}-${game.lastResult.delta}`} amount={game.lastResult.delta} />
                   </div>
                 )}
                 <div style={{ marginTop: 10 }}>
