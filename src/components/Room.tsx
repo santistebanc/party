@@ -22,15 +22,13 @@ interface RoomProps {
   players: Player[];
   chatMessages: ChatMessage[];
   onSendMessage: (message: string) => void;
-  onLeaveRoom: () => void;
 }
 
 export function Room({
   roomId,
   players,
   chatMessages,
-  onSendMessage,
-  onLeaveRoom
+  onSendMessage
 }: RoomProps) {
   return (
     <div className="container">
@@ -42,9 +40,6 @@ export function Room({
         <div className="room-section">
           <div className="room-header">
             <h2>🎉 {roomId}</h2>
-            <button onClick={onLeaveRoom} className="btn btn-danger">
-              Leave Room
-            </button>
           </div>
           
           <div className="room-content">

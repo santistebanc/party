@@ -34,9 +34,11 @@ export function useQueryParams() {
 function QueryParamsProvider({ children }: { children: React.ReactNode }) {
   const [queryParams, setQueryParams] = useState(() => {
     const urlParams = new URLSearchParams(window.location.search);
+    const roomId = urlParams.get('roomId');
+    const viewParam = urlParams.get('view');
     return {
-      roomId: urlParams.get('roomId'),
-      view: urlParams.get('view') || 'lobby'
+      roomId,
+      view: viewParam || (roomId ? 'admin' : 'lobby')
     };
   });
 
@@ -62,9 +64,11 @@ function QueryParamsProvider({ children }: { children: React.ReactNode }) {
     const newUrl = `${window.location.pathname}${urlParams.toString() ? '?' + urlParams.toString() : ''}`;
     window.history.pushState({}, '', newUrl);
     
+    const nextRoomId = urlParams.get('roomId');
+    const nextViewParam = urlParams.get('view');
     setQueryParams({
-      roomId: urlParams.get('roomId'),
-      view: urlParams.get('view') || 'lobby'
+      roomId: nextRoomId,
+      view: nextViewParam || (nextRoomId ? 'admin' : 'lobby')
     });
   };
 
@@ -72,9 +76,11 @@ function QueryParamsProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const handlePopState = () => {
       const urlParams = new URLSearchParams(window.location.search);
+      const roomId = urlParams.get('roomId');
+      const viewParam = urlParams.get('view');
       setQueryParams({
-        roomId: urlParams.get('roomId'),
-        view: urlParams.get('view') || 'lobby'
+        roomId,
+        view: viewParam || (roomId ? 'admin' : 'lobby')
       });
     };
 
@@ -151,7 +157,8 @@ function AppContent() {
 
   const handleRoomCreated = (roomId: string) => {
     setIsLoading(false);
-    updateQueryParams({ roomId, view: 'play' });
+    // Default to admin view without specifying view param
+    updateQueryParams({ roomId });
   };
 
   const { rooms, isConnected, createRoom, joinRoom, clearStorage } = useLobbyConnection(handleRoomCreated);
@@ -185,6 +192,7 @@ function AppContent() {
 
   const handleJoinRoom = (roomId: string) => {
     setIsLoading(true);
+    // Player view by default for joiners
     updateQueryParams({ roomId, view: 'play' });
   };
 

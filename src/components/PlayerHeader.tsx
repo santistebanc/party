@@ -10,11 +10,15 @@ interface PlayerHeaderProps {
 export function PlayerHeader({ playerName, roomId }: PlayerHeaderProps) {
   const { queryParams, updateQueryParams } = useQueryParams();
 
-  const isInRoom = roomId && queryParams.roomId === roomId;
+  const isInRoom = !!roomId && queryParams.roomId === roomId;
+  const view = queryParams.view || 'play';
+  const hideHeader = view === 'admin' || view === 'board';
 
   const handleNavigation = (view: string) => {
     updateQueryParams({ roomId, view });
   };
+
+  if (hideHeader) return null;
 
   return (
     <div className="player-header">
@@ -26,28 +30,21 @@ export function PlayerHeader({ playerName, roomId }: PlayerHeaderProps) {
         <div className="header-navigation">
           <button 
             onClick={() => handleNavigation('play')} 
-            className={`btn btn-icon ${queryParams.view === 'play' ? 'active' : ''}`}
+            className={`btn btn-icon ${view === 'play' ? 'active' : ''}`}
             title="Play"
           >
             <Gamepad2 size={18} />
           </button>
           <button 
-            onClick={() => handleNavigation('board')} 
-            className={`btn btn-icon ${queryParams.view === 'board' ? 'active' : ''}`}
-            title="Board"
-          >
-            <Target size={18} />
-          </button>
-          <button 
             onClick={() => handleNavigation('settings')} 
-            className={`btn btn-icon ${queryParams.view === 'settings' ? 'active' : ''}`}
+            className={`btn btn-icon ${view === 'settings' ? 'active' : ''}`}
             title="Settings"
           >
             <Settings size={18} />
           </button>
           <button 
             onClick={() => handleNavigation('chat')} 
-            className={`btn btn-icon ${queryParams.view === 'chat' ? 'active' : ''}`}
+            className={`btn btn-icon ${view === 'chat' ? 'active' : ''}`}
             title="Chat"
           >
             <MessageCircle size={18} />

@@ -23,7 +23,17 @@ interface RoomMessage {
   data?: any;
 }
 
-export function useRoomConnection(roomId: string | null, playerName: string, userId: string) {
+type RoomConnectionOptions = {
+  autoJoin?: boolean;
+};
+
+export function useRoomConnection(
+  roomId: string | null,
+  playerName: string,
+  userId: string,
+  options: RoomConnectionOptions = {}
+) {
+  const { autoJoin = true } = options;
   const [players, setPlayers] = useState<Player[]>([]);
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [isConnected, setIsConnected] = useState(false);
@@ -54,14 +64,16 @@ export function useRoomConnection(roomId: string | null, playerName: string, use
       console.log('Connected to room');
       setIsConnected(true);
       
-      // Join the room
-      socket.send(JSON.stringify({
-        type: 'join',
-        data: {
-          name: playerName,
-          userId: userId
-        }
-      }));
+      // Join the room optionally
+      if (autoJoin) {
+        socket.send(JSON.stringify({
+          type: 'join',
+          data: {
+            name: playerName,
+            userId: userId
+          }
+        }));
+      }
     });
 
     socket.addEventListener('close', () => {
@@ -141,7 +153,7 @@ export function useRoomConnection(roomId: string | null, playerName: string, use
         socketRef.current = null;
       }
     };
-  }, [roomId, playerName, userId]);
+  }, [roomId, playerName, userId, autoJoin]);
 
   const sendChat = (message: string) => {
     if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) {

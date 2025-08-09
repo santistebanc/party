@@ -1,13 +1,12 @@
 import React, { useState } from 'react';
-import { User, LogOut, Settings } from 'lucide-react';
+import { User } from 'lucide-react';
 
 interface RoomSettingsProps {
   roomId: string;
   onPlayerNameChange: (name: string) => void;
-  onLeaveRoom: () => void;
 }
 
-export function RoomSettings({ roomId, onPlayerNameChange, onLeaveRoom }: RoomSettingsProps) {
+export function RoomSettings({ roomId, onPlayerNameChange }: RoomSettingsProps) {
   const [isEditingName, setIsEditingName] = useState(false);
   const [editName, setEditName] = useState('');
 
@@ -40,7 +39,6 @@ export function RoomSettings({ roomId, onPlayerNameChange, onLeaveRoom }: RoomSe
   return (
     <div className="room-settings">
       <div className="settings-content">
-        <h3><Settings size={20} /> Room Settings</h3>
         
         <div className="settings-section">
           <h4><User size={16} /> Player Name</h4>
@@ -81,15 +79,7 @@ export function RoomSettings({ roomId, onPlayerNameChange, onLeaveRoom }: RoomSe
           )}
         </div>
         
-        <div className="settings-section">
-          <h4><LogOut size={16} /> Room Actions</h4>
-          <button 
-            onClick={onLeaveRoom} 
-            className="btn btn-danger"
-          >
-            Leave Room
-          </button>
-        </div>
+        {/* Room actions (leave) removed as requested */}
       </div>
     </div>
   );

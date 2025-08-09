@@ -1,12 +1,13 @@
 import React from 'react';
 import { RoomPlay } from './RoomPlay';
-import { RoomBoard } from './RoomBoard';
 import { RoomSettings } from './RoomSettings';
 import { RoomChat } from './RoomChat';
 import { PlayerHeader } from './PlayerHeader';
 import { useRoomConnection } from '../hooks/useRoomConnection';
 import { getUserId } from '../utils/userUtils';
 import { useQueryParams } from '../client';
+import { QRCodeDisplay } from './QRCodeDisplay';
+import { PlayersList } from './PlayersList';
 
 interface RoomLayoutProps {
   playerName: string;
@@ -18,6 +19,9 @@ interface RoomLayoutProps {
 export function RoomLayout({ playerName, userId, onPlayerNameChange, onBackToLobby }: RoomLayoutProps) {
   const { queryParams } = useQueryParams();
   const roomId = queryParams.roomId;
+  const mode = ((queryParams.view || (roomId ? 'admin' : 'lobby')) as 'admin' | 'board' | 'player' | 'settings' | 'chat' | 'play');
+
+  const autoJoin = mode === 'player' || mode === 'chat' || mode === 'settings' || mode === 'play';
 
   const { 
     players, 
@@ -25,7 +29,7 @@ export function RoomLayout({ playerName, userId, onPlayerNameChange, onBackToLob
     isConnected, 
     sendChat, 
     leaveRoom 
-  } = useRoomConnection(roomId || null, playerName, userId);
+  } = useRoomConnection(roomId || null, playerName, userId, { autoJoin });
 
   if (!roomId) {
     return <div>Room not found</div>;
@@ -37,21 +41,32 @@ export function RoomLayout({ playerName, userId, onPlayerNameChange, onBackToLob
   };
 
   const renderContent = () => {
-    switch (queryParams.view) {
+    switch (mode) {
+      case 'admin': {
+        return (
+          <div className="stack">
+            <div className="row">
+              <a className="btn chip-amber" href={`/?roomId=${roomId}&view=player`} target="_blank" rel="noreferrer">Open Player Link</a>
+              <a className="btn chip-blue" href={`/?roomId=${roomId}&view=board`} target="_blank" rel="noreferrer">Open Board</a>
+              <button className="btn btn-primary">Start the game</button>
+            </div>
+            <PlayersList players={players} />
+          </div>
+        );
+      }
       case 'board':
         return (
-          <RoomBoard 
-            roomId={roomId}
-            players={players}
-            isConnected={isConnected}
-          />
+          <div className="stack">
+            <p className="subtitle">waiting for the game to start</p>
+            <QRCodeDisplay roomId={roomId} />
+            <PlayersList players={players} />
+          </div>
         );
       case 'settings':
         return (
           <RoomSettings 
             roomId={roomId}
             onPlayerNameChange={onPlayerNameChange}
-            onLeaveRoom={handleLeaveRoom}
           />
         );
       case 'chat':
@@ -67,30 +82,19 @@ export function RoomLayout({ playerName, userId, onPlayerNameChange, onBackToLob
       case 'play':
       default:
         return (
-          <RoomPlay 
-            roomId={roomId}
-            players={players}
-            isConnected={isConnected}
-          />
+          <div className="stack">
+            <p className="subtitle">waiting for the game to start</p>
+            <PlayersList players={players} />
+          </div>
         );
     }
   };
 
   return (
-    <div className="container">
-      <PlayerHeader 
-        playerName={playerName}
-        roomId={roomId}
-      />
-      
-      <div className="main-content">
-        <div className="room-section">
-          <div className="room-content">
-            <div className="room-page-content">
-              {renderContent()}
-            </div>
-          </div>
-        </div>
+    <div className="page stack">
+      <PlayerHeader playerName={playerName} roomId={roomId} />
+      <div className="stack">
+        {renderContent()}
       </div>
     </div>
   );

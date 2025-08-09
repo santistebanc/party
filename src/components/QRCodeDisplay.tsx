@@ -8,12 +8,13 @@ interface QRCodeDisplayProps {
 export function QRCodeDisplay({ roomId }: QRCodeDisplayProps) {
   const [qrDataUrl, setQrDataUrl] = useState<string>('');
   const [isLoading, setIsLoading] = useState(true);
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     const generateQR = async () => {
       try {
         setIsLoading(true);
-        const roomUrl = `${window.location.origin}?room=${roomId}`;
+        const roomUrl = `${window.location.origin}/?roomId=${roomId}&view=player`;
         const dataUrl = await QRCode.toDataURL(roomUrl, {
           width: 200,
           margin: 2,
@@ -34,10 +35,10 @@ export function QRCodeDisplay({ roomId }: QRCodeDisplayProps) {
   }, [roomId]);
 
   const copyRoomUrl = () => {
-    const roomUrl = `${window.location.origin}?room=${roomId}`;
+    const roomUrl = `${window.location.origin}/?roomId=${roomId}&view=player`;
     navigator.clipboard.writeText(roomUrl).then(() => {
-      // You could add a toast notification here
-      console.log('Room URL copied to clipboard');
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
     }).catch((err) => {
       console.error('Failed to copy room URL:', err);
     });
@@ -45,7 +46,6 @@ export function QRCodeDisplay({ roomId }: QRCodeDisplayProps) {
 
   return (
     <div className="qr-section">
-      <h4>📱 Share Room</h4>
       <div className="qr-container">
         {isLoading ? (
           <div className="qr-loading">
@@ -53,19 +53,23 @@ export function QRCodeDisplay({ roomId }: QRCodeDisplayProps) {
             <p>Generating QR code...</p>
           </div>
         ) : (
-          <>
-            <img 
-              src={qrDataUrl} 
-              alt="QR Code for room" 
-              className="qr-code"
+          <div className="qr-wrapper">
+            <img
+              src={qrDataUrl}
+              alt="QR Code for room"
+              className="qr-code qr-clickable"
+              onClick={copyRoomUrl}
+              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); copyRoomUrl(); } }}
+              role="button"
+              tabIndex={0}
+              title={copied ? 'Copied!' : 'Click QR to copy join link'}
             />
-            <button 
-              onClick={copyRoomUrl} 
-              className="btn btn-secondary"
-            >
-              Copy Room URL
-            </button>
-          </>
+            {copied && (
+              <div className="qr-overlay" aria-live="polite">
+                Copied!
+              </div>
+            )}
+          </div>
         )}
       </div>
     </div>
