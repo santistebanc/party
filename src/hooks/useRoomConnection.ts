@@ -18,6 +18,18 @@ interface ChatMessage {
   timestamp: number;
 }
 
+export type GameStatus = "idle" | "running" | "await-next" | "finished";
+export interface Question { id: string; text: string; answer: string; points: number; }
+export interface GameState {
+  status: GameStatus;
+  questions: Question[];
+  currentIndex: number;
+  buzzQueue: string[];
+  currentResponder?: string;
+  scores: Record<string, number>;
+  lastResult?: { userId: string; correct: boolean; delta: number };
+}
+
 interface RoomMessage {
   type: 'room-info' | 'chat' | 'player-joined' | 'player-left';
   data?: any;
@@ -38,6 +50,7 @@ export function useRoomConnection(
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [isConnected, setIsConnected] = useState(false);
   const [currentRoomId, setCurrentRoomId] = useState('');
+  const [game, setGame] = useState<GameState | undefined>(undefined);
   const socketRef = useRef<PartySocket | null>(null);
 
   useEffect(() => {
@@ -59,6 +72,7 @@ export function useRoomConnection(
     });
 
     socketRef.current = socket;
+    ;(window as any).roomSocket = socket; // optional global for debugging
 
     socket.addEventListener('open', () => {
       console.log('Connected to room');
@@ -141,6 +155,9 @@ export function useRoomConnection(
               setPlayers(prev => prev.filter(p => p.userId !== message.data.player.userId));
             }
             break;
+          case 'game-update':
+            setGame(message.data);
+            break;
         }
       } catch (error) {
         console.error('Error parsing message:', error);
@@ -166,6 +183,15 @@ export function useRoomConnection(
     }
   };
 
+  // Game action helpers
+  const startGame = () => socketRef.current?.send(JSON.stringify({ type: 'start-game' }));
+  const setQuestions = (questions: Question[]) => socketRef.current?.send(JSON.stringify({ type: 'admin-set-questions', data: { questions } }));
+  const buzz = () => socketRef.current?.send(JSON.stringify({ type: 'buzz' }));
+  const submitAnswer = (text: string) => socketRef.current?.send(JSON.stringify({ type: 'submit-answer', data: { text } }));
+  const nextQuestion = () => socketRef.current?.send(JSON.stringify({ type: 'next-question' }));
+  const finishGame = () => socketRef.current?.send(JSON.stringify({ type: 'finish-game' }));
+  const resetGame = () => socketRef.current?.send(JSON.stringify({ type: 'reset-game' }));
+
   const leaveRoom = () => {
     if (socketRef.current) {
       socketRef.current.close();
@@ -180,7 +206,9 @@ export function useRoomConnection(
     players,
     chatMessages,
     isConnected,
+    game,
     sendChat,
-    leaveRoom
+    leaveRoom,
+    actions: { startGame, setQuestions, buzz, submitAnswer, nextQuestion, finishGame, resetGame }
   };
 } 

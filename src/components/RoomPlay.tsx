@@ -1,5 +1,6 @@
 import React from 'react';
 import { Clock, Users } from 'lucide-react';
+import { GameState } from '../hooks/useRoomConnection';
 
 interface Player {
   id: string;
@@ -12,16 +13,44 @@ interface RoomPlayProps {
   roomId: string;
   players: Player[];
   isConnected: boolean;
+  game?: GameState;
+  actions?: {
+    buzz: () => void;
+    submitAnswer: (text: string) => void;
+  }
 }
 
-export function RoomPlay({ roomId, players, isConnected }: RoomPlayProps) {
+export function RoomPlay({ roomId, players, isConnected, game, actions }: RoomPlayProps) {
   return (
     <div className="room-play">
       <div className="play-content">
-        <div className="waiting-message">
-          <h3><Clock size={24} /> Waiting for Game to Start</h3>
-          <p>The game will begin when the host starts it from the Board page.</p>
-        </div>
+        {(!game || game.status === 'idle') && (
+          <div className="waiting-message">
+            <h3><Clock size={24} /> Waiting for Game to Start</h3>
+            <p>The game will begin when the host starts it from the Board page.</p>
+          </div>
+        )}
+        {game && game.status === 'running' && (
+          <div className="section-card">
+            <div style={{ fontWeight: 700 }}>Q{game.currentIndex + 1}: {game.questions[game.currentIndex]?.text}</div>
+            <div className="row" style={{ marginTop: 8 }}>
+              <button className="btn" onClick={() => actions?.buzz()} disabled={!!game.currentResponder}>
+                Buzz
+              </button>
+            </div>
+            {game.currentResponder === (window as any).userId && (
+              <div className="row" style={{ marginTop: 8 }}>
+                <input className="chat-input" placeholder="Your answer" id="player-answer-input" />
+                <button className="btn" onClick={() => {
+                  const el = document.getElementById('player-answer-input') as HTMLInputElement | null;
+                  const text = el?.value || '';
+                  actions?.submitAnswer(text);
+                  if (el) el.value = '';
+                }}>Submit</button>
+              </div>
+            )}
+          </div>
+        )}
         
         <div className="players-section">
           <div className="players-header">

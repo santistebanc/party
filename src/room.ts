@@ -7,12 +7,45 @@ interface Player {
   joinedAt: number;
 }
 
+interface Question {
+  id: string;
+  text: string;
+  answer: string;
+  points: number;
+}
+
+type GameStatus = "idle" | "running" | "await-next" | "finished";
+
+interface GameState {
+  status: GameStatus;
+  questions: Question[];
+  currentIndex: number;
+  buzzQueue: string[]; // userIds in order of buzz
+  currentResponder?: string; // userId
+  scores: Record<string, number>; // userId -> score
+  lastResult?: { userId: string; correct: boolean; delta: number };
+}
+
 interface RoomMessage {
-  type: "join" | "leave" | "chat" | "player-joined" | "player-left" | "room-info";
+  type:
+    | "join"
+    | "leave"
+    | "chat"
+    | "player-joined"
+    | "player-left"
+    | "room-info"
+    | "admin-set-questions"
+    | "start-game"
+    | "buzz"
+    | "submit-answer"
+    | "next-question"
+    | "finish-game"
+    | "reset-game";
   data?: any;
 }
 
 export default class RoomServer implements Party.Server {
+  game: GameState | undefined;
   constructor(readonly room: Party.Room) {}
 
   async onConnect(conn: Party.Connection, ctx: Party.ConnectionContext) {
@@ -35,6 +68,27 @@ export default class RoomServer implements Party.Server {
           break;
         case "chat":
           await this.handleChat(parsedMessage.data, sender);
+          break;
+        case "admin-set-questions":
+          await this.handleSetQuestions(parsedMessage.data, sender);
+          break;
+        case "start-game":
+          await this.handleStartGame(sender);
+          break;
+        case "buzz":
+          await this.handleBuzz(sender);
+          break;
+        case "submit-answer":
+          await this.handleSubmitAnswer(parsedMessage.data, sender);
+          break;
+        case "next-question":
+          await this.handleNextQuestion(sender);
+          break;
+        case "finish-game":
+          await this.handleFinishGame(sender);
+          break;
+        case "reset-game":
+          await this.handleResetGame(sender);
           break;
       }
     } catch (error) {
@@ -135,6 +189,143 @@ export default class RoomServer implements Party.Server {
       
       this.room.broadcast(JSON.stringify(chatMessage));
     }
+  }
+
+  // ---------- Game handlers ----------
+  private async handleSetQuestions(data: { questions: Question[] }, sender: Party.Connection) {
+    if (!this.game || this.game.status === "idle" || this.game.status === "finished") {
+      this.game = {
+        status: "idle",
+        questions: (data.questions || []).map(q => ({
+          id: q.id || crypto.randomUUID(),
+          text: q.text,
+          answer: q.answer,
+          points: Math.max(1, Math.min(100, Number(q.points) || 1)),
+        })),
+        currentIndex: -1,
+        buzzQueue: [],
+        scores: {},
+      };
+      this.broadcastGame();
+    } else {
+      // While running, allow updating future questions only
+      this.game.questions = (data.questions || []).map(q => ({
+        id: q.id || crypto.randomUUID(),
+        text: q.text,
+        answer: q.answer,
+        points: Math.max(1, Math.min(100, Number(q.points) || 1)),
+      }));
+      this.broadcastGame();
+    }
+  }
+
+  private async handleStartGame(sender: Party.Connection) {
+    if (!this.game) {
+      this.game = {
+        status: "idle",
+        questions: [],
+        currentIndex: -1,
+        buzzQueue: [],
+        scores: {},
+      };
+    }
+    this.game.status = "running";
+    this.game.currentIndex = 0;
+    this.game.buzzQueue = [];
+    this.game.currentResponder = undefined;
+    this.game.lastResult = undefined;
+    this.broadcastGame();
+  }
+
+  private async handleBuzz(sender: Party.Connection) {
+    if (!this.game || this.game.status !== "running") return;
+    const player = await this.room.storage.get<Player>(`player:${sender.id}`);
+    if (!player) return;
+    const userId = player.userId;
+    if (!this.game.buzzQueue.includes(userId)) {
+      this.game.buzzQueue.push(userId);
+      if (!this.game.currentResponder) {
+        this.game.currentResponder = userId;
+      }
+      this.broadcastGame();
+    }
+  }
+
+  private async handleSubmitAnswer(data: { text: string }, sender: Party.Connection) {
+    if (!this.game || this.game.status !== "running") return;
+    const player = await this.room.storage.get<Player>(`player:${sender.id}`);
+    if (!player) return;
+    const userId = player.userId;
+    if (this.game.currentResponder !== userId) return; // not your turn
+
+    const q = this.game.questions[this.game.currentIndex];
+    if (!q) return;
+    const isCorrect = (data.text || "").trim().toLowerCase() === q.answer.trim().toLowerCase();
+    const position = this.game.buzzQueue.indexOf(userId) + 1; // 1-based
+    const base = q.points;
+    let delta = 0;
+    if (isCorrect) {
+      delta = base;
+    } else {
+      const penalty = Math.max(1, Math.round(base / Math.pow(2, Math.max(0, position - 1))));
+      delta = -penalty;
+    }
+    this.game.scores[userId] = (this.game.scores[userId] || 0) + delta;
+    this.game.lastResult = { userId, correct: isCorrect, delta };
+
+    if (isCorrect) {
+      // lock until next question
+      this.game.status = "await-next";
+      this.game.currentResponder = undefined;
+      this.game.buzzQueue = [];
+    } else {
+      // pop to next responder
+      const nextIndex = position < this.game.buzzQueue.length ? position : -1;
+      if (nextIndex > 0) {
+        this.game.currentResponder = this.game.buzzQueue[nextIndex - 1];
+      } else {
+        this.game.status = "await-next";
+        this.game.currentResponder = undefined;
+        this.game.buzzQueue = [];
+      }
+    }
+    this.broadcastGame();
+  }
+
+  private async handleNextQuestion(sender: Party.Connection) {
+    if (!this.game) return;
+    if (this.game.currentIndex + 1 < this.game.questions.length) {
+      this.game.currentIndex += 1;
+      this.game.status = "running";
+      this.game.buzzQueue = [];
+      this.game.currentResponder = undefined;
+      this.game.lastResult = undefined;
+    } else {
+      this.game.status = "finished";
+    }
+    this.broadcastGame();
+  }
+
+  private async handleFinishGame(sender: Party.Connection) {
+    if (!this.game) return;
+    this.game.status = "finished";
+    this.broadcastGame();
+  }
+
+  private async handleResetGame(sender: Party.Connection) {
+    if (!this.game) return;
+    this.game.status = "idle";
+    this.game.currentIndex = -1;
+    this.game.buzzQueue = [];
+    this.game.currentResponder = undefined;
+    this.game.lastResult = undefined;
+    this.game.scores = {};
+    this.broadcastGame();
+  }
+
+  private broadcastGame() {
+    if (!this.game) return;
+    this.room.broadcast(JSON.stringify({ type: "game-update", data: this.game }));
   }
 
   private async sendRoomInfo(conn: Party.Connection) {

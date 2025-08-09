@@ -1,5 +1,6 @@
 import React from 'react';
 import { Play, Users } from 'lucide-react';
+import { GameState } from '../hooks/useRoomConnection';
 
 interface Player {
   id: string;
@@ -12,28 +13,64 @@ interface RoomBoardProps {
   roomId: string;
   players: Player[];
   isConnected: boolean;
+  game?: GameState;
+  actions?: {
+    startGame: () => void;
+    nextQuestion: () => void;
+    finishGame: () => void;
+    resetGame: () => void;
+  }
 }
 
-export function RoomBoard({ roomId, players, isConnected }: RoomBoardProps) {
+export function RoomBoard({ roomId, players, isConnected, game, actions }: RoomBoardProps) {
   const handleStartGame = () => {
-    console.log('Starting game...');
-    // TODO: Implement game start logic
+    if (!isConnected) return;
+    actions?.startGame();
   };
 
   return (
     <div className="room-board">
       <div className="board-content">
-        <div className="start-game-section">
-          <h3><Play size={24} /> Ready to Start?</h3>
-          <p>All players are ready. Click the button below to start the game!</p>
-          <button 
-            onClick={handleStartGame} 
-            className="start-game-btn"
-            disabled={!isConnected}
-          >
-            <Play size={20} /> Start Game
-          </button>
-        </div>
+        {!game || game.status === 'idle' ? (
+          <div className="start-game-section">
+            <h3><Play size={24} /> Ready to Start?</h3>
+            <p>All players are ready. Click the button below to start the game!</p>
+            <button 
+              onClick={handleStartGame} 
+              className="start-game-btn"
+              disabled={!isConnected}
+            >
+              <Play size={20} /> Start Game
+            </button>
+          </div>
+        ) : (
+          <div className="section-card center">
+            {game?.status === 'running' && (
+              <>
+                <div className="title">Question {game.currentIndex + 1} / {game.questions.length}</div>
+                <div style={{ marginTop: 6, fontSize: 18 }}>{game.questions[game.currentIndex]?.text}</div>
+                {game.currentResponder ? (
+                  <div style={{ marginTop: 8, fontWeight: 700 }}>Turn: {game.currentResponder}</div>
+                ) : (
+                  <div style={{ marginTop: 8, color: '#555' }}>Buzz to answer!</div>
+                )}
+                {game.lastResult && (
+                  <div style={{ marginTop: 8 }}>
+                    {game.lastResult.correct ? `Correct +${game.lastResult.delta}` : `Wrong ${game.lastResult.delta}`}
+                  </div>
+                )}
+                <div style={{ marginTop: 10 }}>
+                  {game.status === 'running' ? null : (
+                    <button className="btn" onClick={() => actions?.nextQuestion()}>Next question</button>
+                  )}
+                </div>
+              </>
+            )}
+            {game?.status === 'finished' && (
+              <Results scores={game.scores} players={players} onEnd={() => actions?.resetGame()} />
+            )}
+          </div>
+        )}
         
         <div className="players-section">
           <div className="players-header">
@@ -58,3 +95,27 @@ export function RoomBoard({ roomId, players, isConnected }: RoomBoardProps) {
     </div>
   );
 } 
+
+function Results({ scores, players, onEnd }: { scores: Record<string, number>; players: Player[]; onEnd: () => void }) {
+  const ranking = Object.entries(scores)
+    .map(([userId, score]) => ({ userId, score, name: players.find(p => p.userId === userId)?.name || 'Unknown' }))
+    .sort((a, b) => b.score - a.score);
+
+  const winner = ranking[0];
+  return (
+    <div className="section-card center">
+      <div className="title">Winner: {winner?.name || '—'}</div>
+      <div style={{ marginTop: 10 }}>
+        {ranking.map((r, idx) => (
+          <div key={r.userId} className="row" style={{ justifyContent: 'space-between', maxWidth: 420, margin: '0 auto' }}>
+            <span>{idx + 1}. {r.name}</span>
+            <span>{r.score} pts</span>
+          </div>
+        ))}
+      </div>
+      <div style={{ marginTop: 10 }}>
+        <button className="btn" onClick={onEnd}>End game</button>
+      </div>
+    </div>
+  );
+}

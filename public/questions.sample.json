@@ -1,0 +1,12 @@
+[
+  { "text": "What is the capital of France?", "answer": "Paris", "points": 10 },
+  { "text": "Who wrote '1984'?", "answer": "George Orwell", "points": 20 },
+  { "text": "What is H2O commonly known as?", "answer": "Water", "points": 5 },
+  { "text": "Which planet is known as the Red Planet?", "answer": "Mars", "points": 15 },
+  { "text": "What is the square root of 81?", "answer": "9", "points": 10 },
+  { "text": "In which year did the Titanic sink?", "answer": "1912", "points": 25 },
+  { "text": "What gas do plants absorb from the atmosphere?", "answer": "Carbon dioxide", "points": 10 },
+  { "text": "Who painted the Mona Lisa?", "answer": "Leonardo da Vinci", "points": 20 },
+  { "text": "What is the largest mammal?", "answer": "Blue whale", "points": 10 },
+  { "text": "What is the chemical symbol for Gold?", "answer": "Au", "points": 15 }
+]
