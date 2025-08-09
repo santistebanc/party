@@ -60,12 +60,12 @@ export function RoomPlay({ roomId, players, isConnected, game, actions, currentU
                 }}>Submit</button>
               </div>
             )}
-            {game.lastResult && (
+            {currentUserId && game.lastResult && game.lastResult.userId === currentUserId && (
               <div style={{ position: 'relative', height: 80, marginTop: 8 }}>
                 <AwardOverlay triggerKey={`${game.currentIndex}-${game.lastResult.userId}-${game.lastResult.delta}`} amount={game.lastResult.delta} />
               </div>
             )}
-            {game.lastResult?.correct && (
+            {currentUserId && game.lastResult?.correct && game.lastResult.userId === currentUserId && (
               <Confetti triggerKey={`${game.currentIndex}-${game.lastResult.userId}`} />
             )}
           </div>
