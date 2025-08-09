@@ -1,6 +1,7 @@
 import React from 'react';
 import { Play, Users } from 'lucide-react';
 import { GameState } from '../hooks/useRoomConnection';
+import { Confetti } from './Confetti';
 
 interface Player {
   id: string;
@@ -45,6 +46,7 @@ export function RoomBoard({ roomId, players, isConnected, game, actions }: RoomB
           </div>
         ) : (
           <div className="section-card center">
+            {game?.lastResult?.correct && <Confetti triggerKey={`${game.currentIndex}-${game.lastResult.userId}`} />}
             {game?.status === 'running' && (
               <>
                 <div className="title">Question {game.currentIndex + 1} / {game.questions.length}</div>
