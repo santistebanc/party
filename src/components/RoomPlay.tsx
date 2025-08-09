@@ -68,7 +68,7 @@ export function RoomPlay({ roomId, players, isConnected, game, actions, currentU
             {currentUserId && game.lastResult && game.lastResult.userId === currentUserId && (
               <div style={{ marginTop: 10 }}>
                 <div style={{ fontSize: 22, fontWeight: 800 }}>
-                  “{lastAnswerByQuestion[game.currentIndex] ?? ''}”
+                  “{game.lastResult.answer ?? lastAnswerByQuestion[game.currentIndex] ?? ''}”
                 </div>
                 <div style={{ marginTop: 6, fontWeight: 700 }}>
                   {game.lastResult.correct ? (

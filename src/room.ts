@@ -23,7 +23,7 @@ interface GameState {
   buzzQueue: string[]; // userIds in order of buzz
   currentResponder?: string; // userId
   scores: Record<string, number>; // userId -> score
-  lastResult?: { userId: string; correct: boolean; delta: number };
+  lastResult?: { userId: string; correct: boolean; delta: number; answer?: string };
 }
 
 interface RoomMessage {
@@ -286,7 +286,7 @@ export default class RoomServer implements Party.Server {
       delta = -penalty;
     }
     this.game.scores[userId] = (this.game.scores[userId] || 0) + delta;
-    this.game.lastResult = { userId, correct: isCorrect, delta };
+    this.game.lastResult = { userId, correct: isCorrect, delta, answer: (data.text || '').toString() };
 
     if (isCorrect) {
       // lock until next question
