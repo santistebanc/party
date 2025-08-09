@@ -30,6 +30,11 @@ export function RoomBoard({ roomId, players, isConnected, game, actions }: RoomB
     actions?.startGame();
   };
 
+  const resolveName = (userId?: string) => {
+    if (!userId) return '';
+    return players.find(p => p.userId === userId)?.name || 'Player';
+  };
+
   return (
     <div className="room-board">
       <div className="board-content">
@@ -48,12 +53,12 @@ export function RoomBoard({ roomId, players, isConnected, game, actions }: RoomB
         ) : (
           <div className="section-card center">
             {game?.lastResult?.correct && <Confetti triggerKey={`${game.currentIndex}-${game.lastResult.userId}`} />}
-            {game?.status === 'running' && (
+                {game?.status === 'running' && (
               <>
                 <div className="title">Question {game.currentIndex + 1} / {game.questions.length}</div>
                 <div style={{ marginTop: 6, fontSize: 18 }}>{game.questions[game.currentIndex]?.text}</div>
-                {game.currentResponder ? (
-                  <div style={{ marginTop: 8, fontWeight: 700 }}>Turn: {game.currentResponder}</div>
+                    {game.currentResponder ? (
+                      <div style={{ marginTop: 8, fontWeight: 700 }}>Turn: {resolveName(game.currentResponder)}</div>
                 ) : (
                   <div style={{ marginTop: 8, color: '#555' }}>Buzz to answer!</div>
                 )}
