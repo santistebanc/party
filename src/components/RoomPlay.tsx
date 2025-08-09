@@ -3,6 +3,7 @@ import { Clock, Users } from 'lucide-react';
 import { GameState } from '../hooks/useRoomConnection';
 import { AwardOverlay } from './AwardOverlay';
 import { Confetti } from './Confetti';
+import { Toast } from './Toast';
 
 interface Player {
   id: string;
@@ -67,6 +68,9 @@ export function RoomPlay({ roomId, players, isConnected, game, actions, currentU
             )}
             {currentUserId && game.lastResult?.correct && game.lastResult.userId === currentUserId && (
               <Confetti triggerKey={`${game.currentIndex}-${game.lastResult.userId}`} />
+            )}
+            {game.lastResult && game.lastResult.userId !== currentUserId && (
+              <Toast triggerKey={`${game.currentIndex}-${game.lastResult.userId}-${game.lastResult.delta}`} message={`${(players.find(p => p.userId === game.lastResult?.userId)?.name) || 'Player'} ${game.lastResult.delta > 0 ? '+' : ''}${game.lastResult.delta}`} />
             )}
           </div>
         )}
