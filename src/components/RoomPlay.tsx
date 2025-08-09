@@ -84,6 +84,16 @@ export function RoomPlay({ roomId, players, isConnected, game, actions, currentU
                 <AwardOverlay triggerKey={`${game.currentIndex}-${game.lastResult.userId}-${game.lastResult.delta}`} amount={game.lastResult.delta} />
               </div>
             )}
+            {game.lastResult && (
+              <div style={{ marginTop: 6, fontWeight: 700 }}>
+                {(players.find(p => p.userId === game.lastResult?.userId)?.name) || 'Player'}{' '}
+                {game.lastResult.correct ? (
+                  <span style={{ color: '#0a7f27' }}>+{game.lastResult.delta}</span>
+                ) : (
+                  <span style={{ color: '#a40000' }}>{game.lastResult.delta}</span>
+                )}
+              </div>
+            )}
             {currentUserId && game.lastResult?.correct && game.lastResult.userId === currentUserId && (
               <Confetti triggerKey={`${game.currentIndex}-${game.lastResult.userId}`} />
             )}

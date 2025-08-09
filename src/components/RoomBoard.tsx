@@ -76,6 +76,15 @@ export function RoomBoard({ roomId, players, isConnected, game, actions }: RoomB
                     <div style={{ position: 'relative', height: 80, marginTop: 8 }}>
                       <AwardOverlay triggerKey={`${game.currentIndex}-${game.lastResult.userId}-${game.lastResult.delta}`} amount={game.lastResult.delta} />
                     </div>
+                    {/* Persistent result summary */}
+                    <div style={{ marginTop: 6, fontWeight: 700 }}>
+                      {resolveName(game.lastResult.userId)}{' '}
+                      {game.lastResult.correct ? (
+                        <span style={{ color: '#0a7f27' }}>+{game.lastResult.delta}</span>
+                      ) : (
+                        <span style={{ color: '#a40000' }}>{game.lastResult.delta}</span>
+                      )}
+                    </div>
                   </>
                 )}
                 {game.status === 'await-next' && (
