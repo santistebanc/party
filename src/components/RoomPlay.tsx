@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Clock, Users } from 'lucide-react';
 import { GameState } from '../hooks/useRoomConnection';
 import { AwardOverlay } from './AwardOverlay';
@@ -24,6 +24,7 @@ interface RoomPlayProps {
 }
 
 export function RoomPlay({ roomId, players, isConnected, game, actions, currentUserId }: RoomPlayProps) {
+  const [lastAnswerByQuestion, setLastAnswerByQuestion] = useState<Record<number, string>>({});
   return (
     <div className="room-play">
       <div className="play-content">
@@ -55,9 +56,26 @@ export function RoomPlay({ roomId, players, isConnected, game, actions, currentU
                 <button className="btn" onClick={() => {
                   const el = document.getElementById('player-answer-input') as HTMLInputElement | null;
                   const text = el?.value || '';
+                  // keep local copy to show after submit
+                  setLastAnswerByQuestion((m) => ({ ...m, [game.currentIndex]: text }));
                   actions?.submitAnswer(text);
                   if (el) el.value = '';
                 }}>Submit</button>
+              </div>
+            )}
+            {/* Show submitted answer result for the current player */}
+            {currentUserId && game.lastResult && game.lastResult.userId === currentUserId && (
+              <div style={{ marginTop: 10 }}>
+                <div style={{ fontSize: 22, fontWeight: 800 }}>
+                  “{lastAnswerByQuestion[game.currentIndex] ?? ''}”
+                </div>
+                <div style={{ marginTop: 6, fontWeight: 700 }}>
+                  {game.lastResult.correct ? (
+                    <span style={{ color: '#0a7f27' }}>Correct +{game.lastResult.delta}</span>
+                  ) : (
+                    <span style={{ color: '#a40000' }}>Incorrect {game.lastResult.delta}</span>
+                  )}
+                </div>
               </div>
             )}
             {game.lastResult && (
