@@ -36,7 +36,8 @@ export function RoomPlay({ roomId, players, isConnected, game, actions, currentU
         )}
         {game && game.status === 'running' && (
           <div className="section-card">
-            <div style={{ fontWeight: 700 }}>Q{game.currentIndex + 1}: {game.questions[game.currentIndex]?.text}</div>
+            <div className="subtitle" style={{ fontSize: 12, opacity: 0.8 }}>Question {game.currentIndex + 1} / {game.questions.length}</div>
+            <div style={{ fontSize: 24, fontWeight: 800 }}>{game.questions[game.currentIndex]?.text}</div>
             <div className="row" style={{ marginTop: 8 }}>
               <button
                 className="btn"

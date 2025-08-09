@@ -55,8 +55,8 @@ export function RoomBoard({ roomId, players, isConnected, game, actions }: RoomB
             {game?.lastResult?.correct && <Confetti triggerKey={`${game.currentIndex}-${game.lastResult.userId}`} />}
             {(game && (game.status === 'running' || game.status === 'await-next')) && (
               <>
-                <div className="title">Question {game.currentIndex + 1} / {game.questions.length}</div>
-                <div style={{ marginTop: 6, fontSize: 18 }}>{game.questions[game.currentIndex]?.text}</div>
+                <div className="subtitle" style={{ fontSize: 12, opacity: 0.8 }}>Question {game.currentIndex + 1} / {game.questions.length}</div>
+                <div style={{ marginTop: 6, fontSize: 30, fontWeight: 800 }}>{game.questions[game.currentIndex]?.text}</div>
                 {game.status === 'running' ? (
                   game.currentResponder ? (
                     <div style={{ marginTop: 8, fontWeight: 700 }}>Turn: {resolveName(game.currentResponder)}</div>
