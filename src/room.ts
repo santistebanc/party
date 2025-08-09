@@ -50,13 +50,18 @@ export default class RoomServer implements Party.Server {
 
   async onConnect(conn: Party.Connection, ctx: Party.ConnectionContext) {
     console.log(`Room ${this.room.id}: ${conn.id} connected`);
-    
+    // Lazily load game from storage and send to this connection
+    await this.ensureGameLoaded();
     // Send room info to the new connection
     await this.sendRoomInfo(conn);
+    if (this.game) {
+      conn.send(JSON.stringify({ type: "game-update", data: this.game }));
+    }
   }
 
   async onMessage(message: string, sender: Party.Connection) {
     try {
+      await this.ensureGameLoaded();
       const parsedMessage: RoomMessage = JSON.parse(message);
       
       switch (parsedMessage.type) {
@@ -192,6 +197,15 @@ export default class RoomServer implements Party.Server {
   }
 
   // ---------- Game handlers ----------
+  private async ensureGameLoaded() {
+    if (!this.game) {
+      const stored = await this.room.storage.get<GameState>("game");
+      if (stored) {
+        this.game = stored;
+      }
+    }
+  }
+
   private async handleSetQuestions(data: { questions: Question[] }, sender: Party.Connection) {
     if (!this.game || this.game.status === "idle" || this.game.status === "finished") {
       this.game = {
@@ -325,6 +339,8 @@ export default class RoomServer implements Party.Server {
 
   private broadcastGame() {
     if (!this.game) return;
+    // Persist to storage and broadcast
+    this.room.storage.put("game", this.game).catch(() => {});
     this.room.broadcast(JSON.stringify({ type: "game-update", data: this.game }));
   }
 
