@@ -24,6 +24,7 @@ interface GameState {
   currentResponder?: string; // userId
   scores: Record<string, number>; // userId -> score
   lastResult?: { userId: string; correct: boolean; delta: number; answer?: string };
+  perQuestion?: { answered: boolean; result?: { userId: string; correct: boolean; delta: number; answer?: string } }[];
 }
 
 interface RoomMessage {
@@ -35,6 +36,10 @@ interface RoomMessage {
     | "player-left"
     | "room-info"
     | "admin-set-questions"
+    | "admin-set-upcoming"
+    | "admin-set-bank"
+    | "admin-repeat-question"
+    | "admin-state"
     | "start-game"
     | "buzz"
     | "submit-answer"
@@ -57,6 +62,8 @@ export default class RoomServer implements Party.Server {
     if (this.game) {
       conn.send(JSON.stringify({ type: "game-update", data: this.game }));
     }
+    // Also send consolidated admin state
+    await this.sendAdminState(conn);
   }
 
   async onMessage(message: string, sender: Party.Connection) {
@@ -76,6 +83,24 @@ export default class RoomServer implements Party.Server {
           break;
         case "admin-set-questions":
           await this.handleSetQuestions(parsedMessage.data, sender);
+          break;
+        case "admin-set-upcoming":
+          await this.handleSetUpcoming(parsedMessage.data);
+          break;
+        case "admin-set-bank":
+          await this.handleSetBank(parsedMessage.data);
+          break;
+        case "admin-repeat-question":
+          await this.handleRepeatQuestion(parsedMessage.data);
+          break;
+        case "admin-set-upcoming":
+          await this.handleSetUpcoming(parsedMessage.data);
+          break;
+        case "admin-set-bank":
+          await this.handleSetBank(parsedMessage.data);
+          break;
+        case "admin-repeat-question":
+          await this.handleRepeatQuestion(parsedMessage.data);
           break;
         case "start-game":
           await this.handleStartGame(sender);
@@ -207,30 +232,38 @@ export default class RoomServer implements Party.Server {
   }
 
   private async handleSetQuestions(data: { questions: Question[] }, sender: Party.Connection) {
-    if (!this.game || this.game.status === "idle" || this.game.status === "finished") {
-      this.game = {
-        status: "idle",
-        questions: (data.questions || []).map(q => ({
-          id: q.id || crypto.randomUUID(),
-          text: q.text,
-          answer: q.answer,
-          points: Math.max(1, Math.min(100, Number(q.points) || 1)),
-        })),
-        currentIndex: -1,
-        buzzQueue: [],
-        scores: {},
-      };
-      this.broadcastGame();
-    } else {
-      // While running, allow updating future questions only
-      this.game.questions = (data.questions || []).map(q => ({
-        id: q.id || crypto.randomUUID(),
-        text: q.text,
-        answer: q.answer,
-        points: Math.max(1, Math.min(100, Number(q.points) || 1)),
-      }));
-      this.broadcastGame();
-    }
+    // Back-compat: store as upcoming list used at game start
+    await this.handleSetUpcoming({ questions: data.questions });
+  }
+
+  private async handleSetUpcoming(data: { questions: Question[] }) {
+    const normalized = (data.questions || []).map(q => ({
+      id: q.id || crypto.randomUUID(),
+      text: q.text,
+      answer: q.answer,
+      points: Math.max(1, Math.min(100, Number(q.points) || 1)),
+    }));
+    await this.room.storage.put("upcoming-questions", normalized);
+    await this.broadcastAdminState();
+  }
+
+  private async handleSetBank(data: { questions: Question[] }) {
+    const normalized = (data.questions || []).map(q => ({
+      id: q.id || crypto.randomUUID(),
+      text: q.text,
+      answer: q.answer,
+      points: Math.max(1, Math.min(100, Number(q.points) || 1)),
+    }));
+    await this.room.storage.put("bank-questions", normalized);
+    await this.broadcastAdminState();
+  }
+
+  private async handleRepeatQuestion(data: { question: Question }) {
+    const list = (await this.room.storage.get<Question[]>("upcoming-questions")) || [];
+    const q = data.question;
+    list.push({ id: q.id || crypto.randomUUID(), text: q.text, answer: q.answer, points: Math.max(1, Math.min(100, Number(q.points) || 1)) });
+    await this.room.storage.put("upcoming-questions", list);
+    await this.broadcastAdminState();
   }
 
   private async handleStartGame(sender: Party.Connection) {
@@ -241,14 +274,29 @@ export default class RoomServer implements Party.Server {
         currentIndex: -1,
         buzzQueue: [],
         scores: {},
+        perQuestion: [],
       };
     }
+    // Freeze snapshot from upcoming list (fallback to prep-questions if needed)
+    try {
+      const upcoming = await this.room.storage.get<Question[]>("upcoming-questions");
+      if (upcoming && upcoming.length > 0) {
+        this.game.questions = upcoming.map(q => ({ id: q.id || crypto.randomUUID(), text: q.text, answer: q.answer, points: Math.max(1, Math.min(100, Number(q.points) || 1)) }));
+      } else {
+        const prep = await this.room.storage.get<Question[]>("prep-questions");
+        if (prep && prep.length > 0) {
+          this.game.questions = prep.map(q => ({ id: q.id || crypto.randomUUID(), text: q.text, answer: q.answer, points: Math.max(1, Math.min(100, Number(q.points) || 1)) }));
+        }
+      }
+    } catch {}
     this.game.status = "running";
     this.game.currentIndex = 0;
     this.game.buzzQueue = [];
     this.game.currentResponder = undefined;
     this.game.lastResult = undefined;
+    this.game.perQuestion = (this.game.questions || []).map(() => ({ answered: false }));
     this.broadcastGame();
+    await this.broadcastAdminState();
   }
 
   private async handleBuzz(sender: Party.Connection) {
@@ -293,6 +341,11 @@ export default class RoomServer implements Party.Server {
       this.game.status = "await-next";
       this.game.currentResponder = undefined;
       this.game.buzzQueue = [];
+      if (this.game.perQuestion && this.game.currentIndex >= 0) {
+        this.game.perQuestion[this.game.currentIndex] = { answered: true, result: this.game.lastResult };
+      }
+      // Remove the completed question from upcoming list
+      await this.removeCompletedQuestionFromUpcoming();
     } else {
       // pop to next responder
       const nextIndex = position < this.game.buzzQueue.length ? position : -1;
@@ -302,9 +355,15 @@ export default class RoomServer implements Party.Server {
         this.game.status = "await-next";
         this.game.currentResponder = undefined;
         this.game.buzzQueue = [];
+        if (this.game.perQuestion && this.game.currentIndex >= 0) {
+          this.game.perQuestion[this.game.currentIndex] = { answered: true, result: this.game.lastResult };
+        }
+        // Remove the completed question from upcoming list
+        await this.removeCompletedQuestionFromUpcoming();
       }
     }
     this.broadcastGame();
+    await this.broadcastAdminState();
   }
 
   private async handleNextQuestion(sender: Party.Connection) {
@@ -319,12 +378,14 @@ export default class RoomServer implements Party.Server {
       this.game.status = "finished";
     }
     this.broadcastGame();
+    await this.broadcastAdminState();
   }
 
   private async handleFinishGame(sender: Party.Connection) {
     if (!this.game) return;
     this.game.status = "finished";
     this.broadcastGame();
+    await this.broadcastAdminState();
   }
 
   private async handleResetGame(sender: Party.Connection) {
@@ -335,7 +396,9 @@ export default class RoomServer implements Party.Server {
     this.game.currentResponder = undefined;
     this.game.lastResult = undefined;
     this.game.scores = {};
+    this.game.perQuestion = (this.game.questions || []).map(() => ({ answered: false }));
     this.broadcastGame();
+    await this.broadcastAdminState();
   }
 
   private broadcastGame() {
@@ -367,6 +430,41 @@ export default class RoomServer implements Party.Server {
         players: players
       }
     }));
+  }
+
+  private async sendAdminState(conn?: Party.Connection) {
+    const upcoming = (await this.room.storage.get<Question[]>("upcoming-questions")) || [];
+    const bank = (await this.room.storage.get<Question[]>("bank-questions")) || [];
+    const history = (this.game?.perQuestion || []).map((meta, idx) => ({
+      index: idx,
+      answered: !!meta?.answered,
+      result: meta?.result,
+      question: this.game?.questions?.[idx],
+    })).filter((entry: any) => entry.answered && entry.question);
+    const payload = { upcoming, bank, history };
+    const msg = JSON.stringify({ type: "admin-state", data: payload });
+    if (conn) {
+      conn.send(msg);
+    } else {
+      this.room.broadcast(msg);
+    }
+  }
+
+  private async broadcastAdminState() {
+    await this.sendAdminState();
+  }
+
+  private async removeCompletedQuestionFromUpcoming() {
+    if (!this.game || this.game.currentIndex < 0) return;
+    
+    const upcoming = (await this.room.storage.get<Question[]>("upcoming-questions")) || [];
+    const currentQuestion = this.game.questions[this.game.currentIndex];
+    
+    if (currentQuestion) {
+      // Remove the completed question from upcoming list
+      const updatedUpcoming = upcoming.filter(q => q.id !== currentQuestion.id);
+      await this.room.storage.put("upcoming-questions", updatedUpcoming);
+    }
   }
 
   private async getAllPlayers(): Promise<Player[]> {

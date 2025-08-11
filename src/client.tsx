@@ -157,8 +157,8 @@ function AppContent() {
 
   const handleRoomCreated = (roomId: string) => {
     setIsLoading(false);
-    // Default to admin view without specifying view param
-    updateQueryParams({ roomId });
+    // Go directly to admin page (empty view)
+    updateQueryParams({ roomId, view: '' as any });
   };
 
   const { rooms, isConnected, createRoom, joinRoom, clearStorage } = useLobbyConnection(handleRoomCreated);

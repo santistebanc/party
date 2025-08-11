@@ -34,24 +34,26 @@ export function RoomPlay({ roomId, players, isConnected, game, actions, currentU
             <p>The game will begin when the host starts it from the Board page.</p>
           </div>
         )}
-        {game && game.status === 'running' && (
+        {game && (game.status === 'running' || game.status === 'await-next') && (
           <div className="section-card">
             <div className="subtitle" style={{ fontSize: 12, opacity: 0.8 }}>Question {game.currentIndex + 1} / {game.questions.length}</div>
             <div style={{ fontSize: 24, fontWeight: 800 }}>{game.questions[game.currentIndex]?.text}</div>
-            <div className="row" style={{ marginTop: 8 }}>
-              <button
-                className="btn"
-                onClick={() => actions?.buzz()}
-                disabled={
-                  !isConnected ||
-                  game.status !== 'running' ||
-                  !!(currentUserId && game.buzzQueue?.includes(currentUserId))
-                }
-              >
-                Buzz
-              </button>
-            </div>
-            {currentUserId && game.currentResponder === currentUserId && (
+            {game.status === 'running' && (
+              <div className="buzzer-container">
+                <button
+                  className="buzzer-btn"
+                  onClick={() => actions?.buzz()}
+                  disabled={
+                    !isConnected ||
+                    game.status !== 'running' ||
+                    !!(currentUserId && game.buzzQueue?.includes(currentUserId))
+                  }
+                >
+                  Buzz
+                </button>
+              </div>
+            )}
+            {currentUserId && game.status === 'running' && game.currentResponder === currentUserId && (
               <div className="row" style={{ marginTop: 8 }}>
                 <input className="chat-input" placeholder="Your answer" id="player-answer-input" />
                 <button className="btn" onClick={() => {
@@ -64,12 +66,18 @@ export function RoomPlay({ roomId, players, isConnected, game, actions, currentU
                 }}>Submit</button>
               </div>
             )}
+            {game.status === 'await-next' && (
+              <div className="subtitle" style={{ marginTop: 6, opacity: 0.8 }}>Round complete</div>
+            )}
+            {/* Show the submitted answer text to all players */}
+            {game.lastResult?.answer && (
+              <div style={{ marginTop: 10, fontSize: 20, fontWeight: 800 }}>
+                “{game.lastResult.answer}”
+              </div>
+            )}
             {/* Show submitted answer result for the current player */}
             {currentUserId && game.lastResult && game.lastResult.userId === currentUserId && (
               <div style={{ marginTop: 10 }}>
-                <div style={{ fontSize: 22, fontWeight: 800 }}>
-                  “{game.lastResult.answer ?? lastAnswerByQuestion[game.currentIndex] ?? ''}”
-                </div>
                 <div style={{ marginTop: 6, fontWeight: 700 }}>
                   {game.lastResult.correct ? (
                     <span style={{ color: '#0a7f27' }}>Correct +{game.lastResult.delta}</span>

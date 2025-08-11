@@ -165,6 +165,49 @@ body {
   box-shadow: 0 6px 20px rgba(220, 38, 38, 0.4);
 }
 
+/* Big mobile-first buzzer button for player */
+.buzzer-container {
+  margin-top: 10px;
+}
+
+.buzzer-btn {
+  width: 100%;
+  height: 45vh;
+  max-height: 500px;
+  min-height: 180px;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  font-size: 32px;
+  font-weight: 900;
+  letter-spacing: 0.5px;
+  background: linear-gradient(135deg, #dc2626 0%, #ef4444 100%);
+  color: #ffffff;
+  box-shadow: 0 10px 30px rgba(220, 38, 38, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.buzzer-btn:active {
+  transform: scale(0.98);
+}
+
+.buzzer-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  background: #475569;
+  color: #cbd5e1;
+  box-shadow: none;
+}
+
+@media (max-width: 640px) {
+  .buzzer-btn {
+    height: 60vh;
+    font-size: 36px;
+  }
+}
+
 .btn-small {
   padding: 6px 12px;
   font-size: 12px;
@@ -217,6 +260,37 @@ body {
   transform: translateY(-2px);
   box-shadow: 0 6px 20px rgba(5, 150, 105, 0.4);
 }
+
+/* Admin questions status rows */
+.admin-questions .q-row {
+  padding: 8px;
+  border-radius: 6px;
+  color: #111111; /* ensure strong contrast on light backgrounds */
+}
+.admin-questions .q-row + .q-row { margin-top: 8px; }
+.admin-questions .q-result { color: #111111; }
+.admin-questions .subtitle { color: #334155; }
+
+/* Result color helpers */
+.result-correct { color: #0a7f27; }
+.result-wrong { color: #a40000; }
+
+/* Simple drag-and-drop affordances */
+.dnd-draggable { border: 1px solid #dddddd; background: #ffffff; }
+.dnd-dragover { outline: 2px dashed #2563eb; outline-offset: 2px; }
+.dnd-dropzone { border-top: 2px dashed #e5e7eb; }
+
+/* Admin list row layout for consistent spacing in edit/view modes */
+.admin-list-row {
+  display: grid !important;
+  grid-template-columns: 2fr 1fr 90px auto;
+  gap: 10px;
+  align-items: center;
+  padding: 6px;
+}
+.admin-list-row .cell { display: flex; align-items: center; min-height: 32px; }
+.admin-list-row .cell-text { padding: 6px 8px; width: 100%; }
+.admin-list-row .cell-actions { display: flex; gap: 6px; justify-content: flex-end; }
 
 /* Chat send button */
 .chat-send-btn {
@@ -275,7 +349,6 @@ body {
   border: 1px solid #374151;
   font-size: 13px;
   min-width: 120px;
-  text-transform: uppercase;
   transition: border-color 0.2s ease;
   flex: 1;
   background: #0b0f14;
@@ -2058,7 +2131,7 @@ body {
   /* Vibrant playful theme inspired palette */
   --bg: linear-gradient(180deg, #5c4df2 0%, #5a46e0 35%, #5a45da 100%);
   --text: #f8fafc; /* near-white for contrast on purple */
-  --muted: #d1d5db; /* light gray */
+  --muted: #334155; /* slate-700 for better contrast on light bg */
   --border: rgba(255,255,255,0.14);
   --surface: rgba(255,255,255,0.10);
   --surface-muted: rgba(255,255,255,0.08);

@@ -12,7 +12,7 @@ export function PlayerHeader({ playerName, roomId }: PlayerHeaderProps) {
 
   const isInRoom = !!roomId && queryParams.roomId === roomId;
   const view = queryParams.view || 'play';
-  const hideHeader = view === 'admin' || view === 'board';
+  const hideHeader = view === 'admin' || view === 'board' || view === '';
 
   const handleNavigation = (view: string) => {
     updateQueryParams({ roomId, view });
