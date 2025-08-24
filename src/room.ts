@@ -338,14 +338,13 @@ export default class RoomServer implements Party.Server {
     const q = this.game.questions[this.game.currentIndex];
     if (!q) return;
     const isCorrect = (data.text || "").trim().toLowerCase() === q.answer.trim().toLowerCase();
-    const position = this.game.buzzQueue.indexOf(userId) + 1; // 1-based
     const base = q.points;
     let delta = 0;
     if (isCorrect) {
       delta = base;
     } else {
-      const penalty = Math.max(1, Math.round(base / Math.pow(2, Math.max(0, position - 1))));
-      delta = -penalty;
+      // Wrong answers deduct half the points (rounded)
+      delta = -Math.round(base / 2);
     }
     this.game.scores[userId] = (this.game.scores[userId] || 0) + delta;
     this.game.lastResult = { userId, correct: isCorrect, delta, answer: (data.text || '').toString() };
@@ -367,8 +366,9 @@ export default class RoomServer implements Party.Server {
       // Remove the completed question from upcoming list
       await this.removeCompletedQuestionFromUpcoming();
     } else {
-      // pop to next responder
-      const nextIndex = position < this.game.buzzQueue.length ? position : -1;
+      // Wrong answer - move to next responder or end round
+      const currentPosition = this.game.buzzQueue.indexOf(userId) + 1; // 1-based
+      const nextIndex = currentPosition < this.game.buzzQueue.length ? currentPosition : -1;
       if (nextIndex > 0) {
         this.game.currentResponder = this.game.buzzQueue[nextIndex - 1];
       } else {
