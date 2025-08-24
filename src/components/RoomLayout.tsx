@@ -246,6 +246,10 @@ function AdminUnified({ roomId }: { roomId: string }) {
     
     // Set edit mode for the new question
     setEditing({ list: 'upcoming', index: upcoming.length });
+    
+    // Auto-reveal the question and answer text
+    setExpandedQuestions(prev => new Set([...prev, newQuestion.id]));
+    setExpandedAnswers(prev => new Set([...prev, newQuestion.id]));
   };
 
   const startGame = () => actions.startGame();
