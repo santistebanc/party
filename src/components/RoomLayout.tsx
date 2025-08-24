@@ -420,21 +420,19 @@ function AdminUnified({ roomId }: { roomId: string }) {
           <div className="settings-content">
             <div className="settings-inline">
               <div className="setting-group">
-                <label>Number of Questions:</label>
                 <select 
                   value={questionCount} 
                   onChange={(e) => setQuestionCount(parseInt(e.target.value))}
                   className="room-select"
                 >
-                  <option value={1}>1</option>
-                  <option value={5}>5</option>
-                  <option value={10}>10</option>
-                  <option value={20}>20</option>
+                  <option value={1}>1 question</option>
+                  <option value={5}>5 questions</option>
+                  <option value={10}>10 questions</option>
+                  <option value={20}>20 questions</option>
                 </select>
               </div>
 
               <div className="setting-group">
-                <label>Topics:</label>
                 <div className="topics-controls">
                   <button 
                     className={`filter-type-btn ${topicFilterType === 'whitelist' ? 'active' : ''}`}

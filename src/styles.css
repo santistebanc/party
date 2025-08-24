@@ -2336,14 +2336,7 @@ a:hover { text-decoration: underline; }
   margin-bottom: 0;
 }
 
-.setting-group label {
-  display: block;
-  margin-bottom: 3px;
-  font-weight: 600;
-  color: #111827;
-  font-size: 13px;
-  text-align: left;
-}
+
 
 .filter-controls {
   display: flex;
