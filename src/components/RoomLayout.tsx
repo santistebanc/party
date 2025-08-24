@@ -233,6 +233,21 @@ function AdminUnified({ roomId }: { roomId: string }) {
     actions.setUpcoming(shuffled);
   };
 
+  const handleAddBlankQuestion = () => {
+    const newQuestion = {
+      id: `blank-${Date.now()}`,
+      text: '',
+      answer: '',
+      points: 10
+    };
+    
+    // Add to upcoming questions
+    actions.addQuestion(newQuestion);
+    
+    // Set edit mode for the new question
+    setEditing({ list: 'upcoming', index: upcoming.length });
+  };
+
   const startGame = () => actions.startGame();
   const resetGame = () => actions.resetGame();
   const nextQuestion = () => actions.nextQuestion();
@@ -384,18 +399,21 @@ function AdminUnified({ roomId }: { roomId: string }) {
           <a href={`/?roomId=${roomId}&view=player`} className="btn" target="_blank">Open Player Link</a>
         </div>
         <div className="row" style={{ gap: 6 }}>
-          <div className="double-button">
-            <button className="btn btn-left" onClick={handleGenerate} disabled={isGenerating}>
-              {isGenerating ? 'Generating...' : 'Generate'}
-            </button>
-            <button 
-              className="btn btn-right btn-icon" 
-              onClick={() => setShowGenerationSettings(!showGenerationSettings)}
-              title="Generation Settings"
-            >
-              <Settings size={16} />
-            </button>
-          </div>
+                  <div className="double-button">
+          <button className="btn btn-left" onClick={handleGenerate} disabled={isGenerating}>
+            {isGenerating ? 'Generating...' : 'Generate'}
+          </button>
+          <button 
+            className="btn btn-right btn-icon" 
+            onClick={() => setShowGenerationSettings(!showGenerationSettings)}
+            title="Generation Settings"
+          >
+            <Settings size={16} />
+          </button>
+        </div>
+        <button className="btn" onClick={handleAddBlankQuestion}>
+          Add
+        </button>
           <button className="btn" onClick={shufflePlaylist}>Shuffle</button>
           <button className="btn" onClick={startGame}>Start</button>
           <button className="btn" onClick={nextQuestion}>Next</button>

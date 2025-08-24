@@ -207,6 +207,7 @@ export function useRoomConnection(
   const resetGame = () => socketRef.current?.send(JSON.stringify({ type: 'reset-game' }));
   const generateQuestions = (settings?: { questionCount: number; topicFilterType: 'whitelist' | 'blacklist'; topicFilters: string[] }) => 
     socketRef.current?.send(JSON.stringify({ type: 'admin-generate-questions', data: settings }));
+  const addQuestion = (question: Question) => socketRef.current?.send(JSON.stringify({ type: 'admin-add-question', data: { question } }));
 
   const leaveRoom = () => {
     if (socketRef.current) {
@@ -226,6 +227,6 @@ export function useRoomConnection(
     adminState,
     sendChat,
     leaveRoom,
-    actions: { startGame, setQuestions, setUpcoming, setBank, repeatQuestion, buzz, submitAnswer, nextQuestion, finishGame, resetGame, generateQuestions }
+    actions: { startGame, setQuestions, setUpcoming, setBank, repeatQuestion, buzz, submitAnswer, nextQuestion, finishGame, resetGame, generateQuestions, addQuestion }
   };
 } 

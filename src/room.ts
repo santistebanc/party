@@ -43,6 +43,7 @@ interface RoomMessage {
     | "admin-set-upcoming"
     | "admin-set-bank"
     | "admin-repeat-question"
+    | "admin-add-question"
     | "admin-generate-questions"
     | "admin-state"
     | "start-game"
@@ -97,6 +98,9 @@ export default class RoomServer implements Party.Server {
           break;
         case "admin-repeat-question":
           await this.handleRepeatQuestion(parsedMessage.data);
+          break;
+        case "admin-add-question":
+          await this.handleAddQuestion(parsedMessage.data);
           break;
         case "admin-generate-questions":
           await this.handleGenerateQuestions(parsedMessage.data, sender);
@@ -258,6 +262,14 @@ export default class RoomServer implements Party.Server {
   }
 
   private async handleRepeatQuestion(data: { question: Question }) {
+    const list = (await this.room.storage.get<Question[]>("upcoming-questions")) || [];
+    const q = data.question;
+    list.push({ id: q.id || crypto.randomUUID(), text: q.text, answer: q.answer, points: Math.max(1, Math.min(100, Number(q.points) || 1)) });
+    await this.room.storage.put("upcoming-questions", list);
+    await this.broadcastAdminState();
+  }
+
+  private async handleAddQuestion(data: { question: Question }) {
     const list = (await this.room.storage.get<Question[]>("upcoming-questions")) || [];
     const q = data.question;
     list.push({ id: q.id || crypto.randomUUID(), text: q.text, answer: q.answer, points: Math.max(1, Math.min(100, Number(q.points) || 1)) });
