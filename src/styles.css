@@ -2316,7 +2316,13 @@ a:hover { text-decoration: underline; }
   width: 100%;
 }
 
-.settings-inline .setting-group {
+.settings-inline .setting-group:first-child {
+  flex: 0 0 auto;
+  margin-bottom: 0;
+  min-width: 0;
+}
+
+.settings-inline .setting-group:last-child {
   flex: 1;
   margin-bottom: 0;
   min-width: 0;
@@ -2369,8 +2375,20 @@ a:hover { text-decoration: underline; }
 }
 
 /* Tag Input Component */
-.tag-input-container {
+.topics-controls {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
   width: 100%;
+}
+
+.topics-controls .filter-type-btn {
+  flex-shrink: 0;
+}
+
+.tag-input-container {
+  flex: 1;
+  min-width: 0;
 }
 
 .tag-input {
