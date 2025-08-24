@@ -444,34 +444,37 @@ function AdminUnified({ roomId }: { roomId: string }) {
 
             <div className="setting-group">
               <label>Topics:</label>
-              <div className="topic-input-group">
-                <input 
-                  type="text" 
-                  placeholder={`Add ${topicFilterType === 'whitelist' ? 'allowed' : 'forbidden'} topics...`}
-                  value={newTopic}
-                  onChange={(e) => setNewTopic(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && addTopic()}
-                  className="room-input"
-                />
-                <button className="btn btn-small" onClick={addTopic}>Add</button>
-              </div>
-              
-              {topicFilters.length > 0 && (
-                <div className="topic-tags">
+              <div className="tag-input-container">
+                <div className="tag-input">
                   {topicFilters.map((topic, index) => (
-                    <span key={index} className="topic-tag">
+                    <span key={index} className="tag-input-tag">
                       {topic}
                       <button 
-                        className="remove-topic-btn" 
+                        className="tag-remove-btn" 
                         onClick={() => removeTopic(topic)}
                         title="Remove topic"
                       >
-                        <X size={12} />
+                        <X size={10} />
                       </button>
                     </span>
                   ))}
+                  <input 
+                    type="text" 
+                    placeholder={`Add ${topicFilterType === 'whitelist' ? 'allowed' : 'forbidden'} topics...`}
+                    value={newTopic}
+                    onChange={(e) => setNewTopic(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && newTopic.trim()) {
+                        e.preventDefault();
+                        addTopic();
+                      } else if (e.key === 'Backspace' && !newTopic && topicFilters.length > 0) {
+                        removeTopic(topicFilters[topicFilters.length - 1]);
+                      }
+                    }}
+                    className="tag-input-field"
+                  />
                 </div>
-              )}
+              </div>
             </div>
           </div>
         </div>

@@ -2366,56 +2366,48 @@ a:hover { text-decoration: underline; }
   border-color: #9ca3af;
 }
 
-.topic-input-group {
-  display: flex;
-  gap: 6px;
+/* Tag Input Component */
+.tag-input-container {
+  width: 100%;
 }
 
-.topic-input-group .room-input {
-  flex: 1;
-  padding: 5px 8px;
-  font-size: 13px;
-  border: 1px solid #d1d5db;
-  background: #ffffff;
-  color: #111827;
-}
-
-.btn-small {
-  padding: 5px 8px;
-  font-size: 12px;
-  min-width: auto;
-  background: #f3f4f6;
-  border: 1px solid #d1d5db;
-  color: #111827;
-}
-
-.btn-small:hover {
-  background: #e5e7eb;
-}
-
-.topic-tags {
+.tag-input {
   display: flex;
   flex-wrap: wrap;
-  gap: 4px;
-  margin-top: 6px;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  background: #ffffff;
+  min-height: 36px;
+  transition: border-color 0.2s ease;
 }
 
-.topic-tag {
+.tag-input:focus-within {
+  border-color: var(--primary);
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+}
+
+.tag-input-tag {
   display: inline-flex;
   align-items: center;
-  gap: 3px;
-  background: #f3f4f6;
-  border: 1px solid #d1d5db;
-  border-radius: 10px;
-  padding: 2px 6px;
-  font-size: 11px;
-  color: #111827;
+  gap: 4px;
+  background: #e0e7ff;
+  border: 1px solid #c7d2fe;
+  border-radius: 12px;
+  padding: 3px 8px;
+  font-size: 12px;
+  color: #3730a3;
+  white-space: nowrap;
+  animation: tagAppear 0.2s ease;
 }
 
-.remove-topic-btn {
+.tag-remove-btn {
   background: none;
   border: none;
-  color: #6b7280;
+  color: #6366f1;
   cursor: pointer;
   padding: 1px;
   border-radius: 50%;
@@ -2423,11 +2415,38 @@ a:hover { text-decoration: underline; }
   align-items: center;
   justify-content: center;
   transition: all 0.2s ease;
+  margin-left: 2px;
 }
 
-.remove-topic-btn:hover {
-  background: #e5e7eb;
+.tag-remove-btn:hover {
+  background: #c7d2fe;
+  color: #4338ca;
+}
+
+.tag-input-field {
+  flex: 1;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: 13px;
   color: #111827;
+  min-width: 120px;
+  padding: 0;
+}
+
+.tag-input-field::placeholder {
+  color: #9ca3af;
+}
+
+@keyframes tagAppear {
+  from {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 
 /* History Layout Styles */
