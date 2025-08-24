@@ -2459,7 +2459,7 @@ a:hover { text-decoration: underline; }
 }
 
 .question-number {
-  color: var(--text);
+  color: #000000;
   min-width: 24px;
   font-size: 14px;
   font-weight: 800;
@@ -2467,13 +2467,13 @@ a:hover { text-decoration: underline; }
 
 .question-text {
   flex: 1;
-  color: var(--text);
+  color: #000000;
   font-weight: 700;
   line-height: 1.5;
 }
 
 .question-answer {
-  color: var(--text);
+  color: #000000;
   font-style: italic;
   font-weight: 600;
   font-size: 14px;
@@ -2503,7 +2503,7 @@ a:hover { text-decoration: underline; }
 }
 
 .player-answer {
-  color: var(--text);
+  color: #000000;
   font-style: italic;
   flex: 1;
   font-weight: 500;
@@ -2525,7 +2525,7 @@ a:hover { text-decoration: underline; }
 }
 
 .history-status {
-  color: var(--text);
+  color: #000000;
   font-style: italic;
   font-size: 14px;
   padding: 8px 12px;
