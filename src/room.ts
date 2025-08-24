@@ -571,7 +571,7 @@ Ensure each question is in a completely different category or topic area.`;
       });
       
       const result = await generateObject({
-        model: openai('gpt-3.5-turbo'),
+        model: openai('gpt-4o-mini'),
         prompt: prompt,
         schema: schema
       });
