@@ -2342,6 +2342,7 @@ a:hover { text-decoration: underline; }
   font-weight: 600;
   color: #111827;
   font-size: 13px;
+  text-align: left;
 }
 
 .filter-controls {
@@ -2361,6 +2362,11 @@ a:hover { text-decoration: underline; }
   transition: all 0.2s ease;
   align-self: flex-start;
   font-size: 12px;
+  height: 36px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .filter-type-btn.active {
@@ -2489,6 +2495,8 @@ a:hover { text-decoration: underline; }
   font-size: 13px;
   cursor: pointer;
   transition: border-color 0.2s ease;
+  height: 36px;
+  box-sizing: border-box;
 }
 
 .room-select:focus {
