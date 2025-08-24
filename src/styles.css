@@ -292,6 +292,37 @@ body {
 .admin-list-row .cell-text { padding: 6px 8px; width: 100%; }
 .admin-list-row .cell-actions { display: flex; gap: 6px; justify-content: flex-end; }
 
+/* History list states with high contrast */
+.history-item { padding: 8px; border: 1px solid #d4d4d4; background: #ffffff; }
+.history-current { background: #fff3cd; border-color: #ffe69c; }
+.history-correct { background: #d1fae5; border-color: #34d399; }
+.history-wrong { background: #fee2e2; border-color: #f87171; }
+
+/* Blurred text styling */
+.blurred-text {
+  filter: blur(3px);
+  user-select: none;
+  color: #666;
+}
+
+/* Eye toggle button styling */
+.eye-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 8px;
+  padding: 2px;
+  font-size: 12px;
+  min-width: 20px;
+  min-height: 20px;
+  opacity: 0.7;
+  transition: opacity 0.2s ease;
+  vertical-align: middle;
+}
+
+.eye-toggle-btn:hover {
+  opacity: 1;
+}
+
 /* Chat send button */
 .chat-send-btn {
   padding: 8px 16px;

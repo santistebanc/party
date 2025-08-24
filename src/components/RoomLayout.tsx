@@ -2,6 +2,7 @@ import React from 'react';
 import { DndContext, closestCenter, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy, useSortable, arrayMove } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import { Eye } from 'lucide-react';
 import { RoomPlay } from './RoomPlay';
 import { RoomSettings } from './RoomSettings';
 import { RoomChat } from './RoomChat';
@@ -99,12 +100,12 @@ export function RoomLayout({ playerName, userId, onPlayerNameChange, onBackToLob
 
 // --- Unified Admin Page ---
 function AdminUnified({ roomId }: { roomId: string }) {
-  const { game, actions, adminState } = useRoomConnection(roomId, '', '', { autoJoin: false });
-  const [activeTab, setActiveTab] = useState<'game' | 'bank'>('game');
+  const { players, game, actions, adminState } = useRoomConnection(roomId, '', '', { autoJoin: false });
   const [upcoming, setUpcoming] = useState(adminState?.upcoming || []);
-  const [bank, setBank] = useState(adminState?.bank || []);
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
   const [editing, setEditing] = useState<{ list: 'upcoming' | 'bank'; index: number } | null>(null);
+  const [expandedQuestions, setExpandedQuestions] = useState<Set<string>>(new Set());
+  const [expandedAnswers, setExpandedAnswers] = useState<Set<string>>(new Set());
   const editingRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -120,15 +121,15 @@ function AdminUnified({ roomId }: { roomId: string }) {
   }, [editing]);
 
   useEffect(() => { if (adminState) setUpcoming(adminState.upcoming || []); }, [adminState?.upcoming]);
-  useEffect(() => { if (adminState) setBank(adminState.bank || []); }, [adminState?.bank]);
 
   const handleGenerate = async () => {
     try {
       const res = await fetch('/questions.sample.json');
       const all = await res.json();
       const normalized = all.map((q: any) => ({ id: crypto.randomUUID(), text: q.text, answer: q.answer, points: Number(q.points) || 10 }));
-      setBank(normalized);
-      actions.setBank(normalized);
+      const next = [...(upcoming || []), ...normalized];
+      setUpcoming(next);
+      actions.setUpcoming(next);
     } catch (e) { console.error('Failed to load questions.sample.json', e); }
   };
 
@@ -136,9 +137,38 @@ function AdminUnified({ roomId }: { roomId: string }) {
     const next = upcoming.map((q, i) => i === index ? { ...q, [field]: field === 'points' ? Number(value) : value } : q);
     setUpcoming(next); actions.setUpcoming(next);
   };
-  const updateBank = (index: number, field: 'text'|'answer'|'points', value: string) => {
-    const next = bank.map((q, i) => i === index ? { ...q, [field]: field === 'points' ? Number(value) : value } : q);
-    setBank(next); actions.setBank(next);
+
+  const toggleExpandedQuestion = (itemId: string) => {
+    setExpandedQuestions(prev => {
+      const next = new Set(prev);
+      if (next.has(itemId)) {
+        next.delete(itemId);
+      } else {
+        next.add(itemId);
+      }
+      return next;
+    });
+  };
+
+  const toggleExpandedAnswer = (itemId: string) => {
+    setExpandedAnswers(prev => {
+      const next = new Set(prev);
+      if (next.has(itemId)) {
+        next.delete(itemId);
+      } else {
+        next.add(itemId);
+      }
+      return next;
+    });
+  };
+
+  const setEditingWithExpansion = (list: 'upcoming' | 'bank', index: number) => {
+    const item = upcoming[index];
+    if (item) {
+      setExpandedQuestions(prev => new Set([...prev, item.id]));
+      setExpandedAnswers(prev => new Set([...prev, item.id]));
+    }
+    setEditing({ list, index });
   };
 
   const moveItem = (list: 'upcoming'|'bank', from: number, to: number) => {
@@ -146,26 +176,22 @@ function AdminUnified({ roomId }: { roomId: string }) {
     if (list === 'upcoming') {
       const next = arrayMove(upcoming, from, to);
       setUpcoming(next); actions.setUpcoming(next);
-    } else {
-      const next = arrayMove(bank, from, to);
-      setBank(next); actions.setBank(next);
     }
   };
 
   const removeItem = (list: 'upcoming'|'bank', index: number) => {
-    const src = list === 'upcoming' ? [...upcoming] : [...bank];
+    const src = list === 'upcoming' ? [...upcoming] : [];
     src.splice(index, 1);
-    if (list === 'upcoming') { setUpcoming(src); actions.setUpcoming(src); } else { setBank(src); actions.setBank(src); }
-  };
-
-  const addFromBankToUpcoming = (index: number) => {
-    const item = bank[index]; if (!item) return;
-    const next = [...upcoming, { ...item, id: crypto.randomUUID() }];
-    setUpcoming(next); actions.setUpcoming(next);
+    if (list === 'upcoming') { setUpcoming(src); actions.setUpcoming(src); }
   };
 
   const repeatToUpcoming = (q: any) => {
     actions.repeatQuestion(q);
+    // Auto-expand the repeated question and answer
+    if (q.id) {
+      setExpandedQuestions(prev => new Set([...prev, q.id]));
+      setExpandedAnswers(prev => new Set([...prev, q.id]));
+    }
   };
 
   const startGame = () => actions.startGame();
@@ -173,16 +199,15 @@ function AdminUnified({ roomId }: { roomId: string }) {
   const nextQuestion = () => actions.nextQuestion();
 
   const renderList = (list: 'upcoming'|'bank') => {
-    const items = list === 'upcoming' ? upcoming : bank;
-    const onUpdate = list === 'upcoming' ? updateUpcoming : updateBank;
-    const onRemove = (idx: number) => removeItem(list, idx);
-    const extraButton = list === 'bank';
+    const items = list === 'upcoming' ? upcoming : [];
+    const onUpdate = updateUpcoming;
+    const onRemove = (idx: number) => removeItem('upcoming', idx);
     const onDragEnd = (event: any) => {
       const { active, over } = event;
       if (!over || active.id === over.id) return;
       const oldIndex = items.findIndex((i) => i.id === active.id);
       const newIndex = items.findIndex((i) => i.id === over.id);
-      if (oldIndex !== -1 && newIndex !== -1) moveItem(list, oldIndex, newIndex);
+      if (oldIndex !== -1 && newIndex !== -1) moveItem('upcoming', oldIndex, newIndex);
     };
 
     return (
@@ -196,20 +221,48 @@ function AdminUnified({ roomId }: { roomId: string }) {
                 isEditing={!!editing && editing.list === list && editing.index === idx}
                 setEditing={(val: boolean) => setEditing(val ? { list, index: idx } : null)}
                 editingRef={editingRef}
-                onDoubleClick={() => setEditing({ list, index: idx })}
+                onDoubleClick={() => setEditingWithExpansion(list, idx)}
               >
                 <div className="cell cell-question">
                   {editing && editing.list === list && editing.index === idx ? (
                     <input className="room-input" placeholder="Question" value={q.text} onChange={(e) => onUpdate(idx, 'text', e.target.value)} />
                   ) : (
-                    <div className="cell-text">{q.text || <span className="muted">(empty)</span>}</div>
+                    <div className="cell-text">
+                      <span className={expandedQuestions.has(q.id) ? "" : "blurred-text"}>
+                        {q.text || <span className="muted">(empty)</span>}
+                      </span>
+                      {!expandedQuestions.has(q.id) && (
+                        <button 
+                          className="btn-icon eye-toggle-btn" 
+                          onClick={(e) => { e.stopPropagation(); toggleExpandedQuestion(q.id); }}
+                          title="Show question"
+                        >
+                          <Eye size={14} />
+                        </button>
+                      )}
+                    </div>
                   )}
                 </div>
                 <div className="cell cell-answer">
                   {editing && editing.list === list && editing.index === idx ? (
                     <input className="room-input" placeholder="Answer" value={q.answer} onChange={(e) => onUpdate(idx, 'answer', e.target.value)} />
                   ) : (
-                    <div className="cell-text">{q.answer || <span className="muted">(no answer)</span>}</div>
+                    <div className="cell-text">
+                      {expandedAnswers.has(q.id) ? (
+                        q.answer || <span className="muted">(no answer)</span>
+                      ) : (
+                        <span className="muted">••••••••••</span>
+                      )}
+                      {!expandedAnswers.has(q.id) && expandedQuestions.has(q.id) && (
+                        <button 
+                          className="btn-icon eye-toggle-btn" 
+                          onClick={(e) => { e.stopPropagation(); toggleExpandedAnswer(q.id); }}
+                          title="Show answer"
+                        >
+                          <Eye size={14} />
+                        </button>
+                      )}
+                    </div>
                   )}
                 </div>
                 <div className="cell cell-points">
@@ -220,11 +273,10 @@ function AdminUnified({ roomId }: { roomId: string }) {
                   )}
                 </div>
                 <div className="cell cell-actions">
-                  {extraButton && <button className="btn" onClick={() => addFromBankToUpcoming(idx)}>Add</button>}
                   {editing && editing.list === list && editing.index === idx ? (
                     <button className="btn" onClick={() => setEditing(null)}>Done</button>
                   ) : (
-                    <button className="btn" onClick={() => setEditing({ list, index: idx })}>Edit</button>
+                    <button className="btn" onClick={() => setEditingWithExpansion(list, idx)}>Edit</button>
                   )}
                   <button className="btn" onClick={() => onRemove(idx)}>Remove</button>
                 </div>
@@ -241,20 +293,41 @@ function AdminUnified({ roomId }: { roomId: string }) {
     const history = adminState?.history || [];
     return (
       <div className="stack" style={{ marginTop: 8 }}>
-        {history.map((h: any) => (
-          <div key={h.index} className="row" style={{ justifyContent: 'space-between' }}>
-            <div>
-              <div style={{ fontWeight: 600 }}>{h.index + 1}. {h.question?.text}</div>
-              {h.result && (
-                <div className={h.result.correct ? 'result-correct' : 'result-wrong'}>
-                  {h.result.correct ? 'gained' : 'lost'} {h.result.correct ? '+' : ''}{h.result.delta}
-                  {h.result.answer ? <> – "{h.result.answer}"</> : null}
+        {history.map((h: any) => {
+          const isCurrent = game && (h.index === game.currentIndex) && game.status === 'running';
+          const answered = !!h.answered && !!h.result;
+          const playerName = h?.result?.userId ? (players.find(p => p.userId === h.result.userId)?.name || `Player ${h.result.userId.slice(0,4)}`) : undefined;
+          const rowClass = answered ? (h.result.correct ? 'history-item history-correct' : 'history-item history-wrong') : (isCurrent ? 'history-item history-current' : 'history-item');
+          return (
+            <div key={h.index} className={rowClass}>
+              <div className="row" style={{ justifyContent: 'space-between' }}>
+                <div>
+                  <div style={{ fontWeight: 700 }}>{h.index + 1}. {h.question?.text}</div>
+                  {answered ? (
+                    <div className={h.result.correct ? 'result-correct' : 'result-wrong'}>
+                      {playerName ? <><span style={{ fontWeight: 600 }}>{playerName}</span> </> : null}
+                      {h.result.correct ? 'gained' : 'lost'} {h.result.correct ? '+' : ''}{h.result.delta}
+                      {h.result.answer ? <> – "{h.result.answer}"</> : null}
+                    </div>
+                  ) : isCurrent ? (
+                    <div className="subtitle">
+                      {game?.buzzQueue && game.buzzQueue.length > 0 ? (
+                        (() => {
+                          const firstBuzzerId = game.buzzQueue[0];
+                          const buzzerPlayer = players.find(p => p.userId === firstBuzzerId);
+                          return `${buzzerPlayer?.name || `Player ${firstBuzzerId.slice(0,4)}`} buzzed`;
+                        })()
+                      ) : (
+                        'In progress…'
+                      )}
+                    </div>
+                  ) : null}
                 </div>
-              )}
+                <button className="btn" onClick={() => repeatToUpcoming(h.question)}>Repeat</button>
+              </div>
             </div>
-            <button className="btn" onClick={() => repeatToUpcoming(h.question)}>Repeat</button>
-          </div>
-        ))}
+          );
+        })}
 
       </div>
     );
@@ -268,31 +341,17 @@ function AdminUnified({ roomId }: { roomId: string }) {
         <a href={`/?roomId=${roomId}&view=player`} className="btn" target="_blank">Open Player Link</a>
       </div>
 
-      <div className="row" style={{ gap: 6, justifyContent: 'space-between', alignItems: 'center' }}>
-        <div className="row" style={{ gap: 6 }}>
-          <button className={`btn ${activeTab === 'game' ? 'btn-primary' : ''}`} onClick={() => setActiveTab('game')}>Game</button>
-          <button className={`btn ${activeTab === 'bank' ? 'btn-primary' : ''}`} onClick={() => setActiveTab('bank')}>Questions bank</button>
-        </div>
-        <div className="row" style={{ gap: 6 }}>
-          {activeTab === 'bank' && <button className="btn" onClick={handleGenerate}>Generate</button>}
-          {activeTab === 'game' && (
-            <>
-              <button className="btn" onClick={startGame}>Start</button>
-              <button className="btn" onClick={nextQuestion}>Next</button>
-              <button className="btn" onClick={resetGame}>Reset</button>
-            </>
-          )}
-        </div>
+      {/* Controls above the first list (history) */}
+      <div className="row" style={{ gap: 6, justifyContent: 'flex-end', alignItems: 'center' }}>
+        <button className="btn" onClick={handleGenerate}>Generate</button>
+        <button className="btn" onClick={startGame}>Start</button>
+        <button className="btn" onClick={nextQuestion}>Next</button>
+        <button className="btn" onClick={resetGame}>Reset</button>
       </div>
 
       <div className="section-card">
-        {activeTab === 'game' && (
-          <>
-            {renderHistory()}
-            {renderList('upcoming')}
-          </>
-        )}
-        {activeTab === 'bank' && renderList('bank')}
+        {renderHistory()}
+        {renderList('upcoming')}
       </div>
     </div>
   );

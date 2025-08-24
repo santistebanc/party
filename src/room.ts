@@ -296,6 +296,13 @@ export default class RoomServer implements Party.Server {
     this.game.lastResult = undefined;
     this.game.perQuestion = (this.game.questions || []).map(() => ({ answered: false }));
     this.broadcastGame();
+    // Remove the now-current question from upcoming playlist immediately
+    try {
+      const current = this.game.questions[this.game.currentIndex];
+      if (current) {
+        await this.removeQuestionFromUpcomingById(current.id);
+      }
+    } catch {}
     await this.broadcastAdminState();
   }
 
@@ -374,6 +381,11 @@ export default class RoomServer implements Party.Server {
       this.game.buzzQueue = [];
       this.game.currentResponder = undefined;
       this.game.lastResult = undefined;
+      // Remove the new current question from upcoming playlist as it starts
+      const current = this.game.questions[this.game.currentIndex];
+      if (current) {
+        await this.removeQuestionFromUpcomingById(current.id);
+      }
     } else {
       this.game.status = "finished";
     }
@@ -390,6 +402,11 @@ export default class RoomServer implements Party.Server {
 
   private async handleResetGame(sender: Party.Connection) {
     if (!this.game) return;
+    // Repopulate upcoming playlist with all game questions
+    const allQuestions = (this.game.questions || []).map(q => ({ id: q.id || crypto.randomUUID(), text: q.text, answer: q.answer, points: Math.max(1, Math.min(100, Number(q.points) || 1)) }));
+    await this.room.storage.put("upcoming-questions", allQuestions);
+
+    // Clear history and reset game state
     this.game.status = "idle";
     this.game.currentIndex = -1;
     this.game.buzzQueue = [];
@@ -435,12 +452,17 @@ export default class RoomServer implements Party.Server {
   private async sendAdminState(conn?: Party.Connection) {
     const upcoming = (await this.room.storage.get<Question[]>("upcoming-questions")) || [];
     const bank = (await this.room.storage.get<Question[]>("bank-questions")) || [];
-    const history = (this.game?.perQuestion || []).map((meta, idx) => ({
-      index: idx,
-      answered: !!meta?.answered,
-      result: meta?.result,
-      question: this.game?.questions?.[idx],
-    })).filter((entry: any) => entry.answered && entry.question);
+    let history: Array<{ index: number; answered: boolean; result?: any; question?: Question }> = [];
+    if (this.game) {
+      const maxIndex = this.game.status === "idle" ? -1 : (this.game.status === "finished" ? (this.game.questions?.length || 0) - 1 : this.game.currentIndex);
+      const per = this.game.perQuestion || [];
+      history = (this.game.questions || []).map((q, idx) => ({
+        index: idx,
+        answered: !!per[idx]?.answered,
+        result: per[idx]?.result,
+        question: q,
+      })).filter(entry => entry.index <= maxIndex && !!entry.question);
+    }
     const payload = { upcoming, bank, history };
     const msg = JSON.stringify({ type: "admin-state", data: payload });
     if (conn) {
@@ -465,6 +487,12 @@ export default class RoomServer implements Party.Server {
       const updatedUpcoming = upcoming.filter(q => q.id !== currentQuestion.id);
       await this.room.storage.put("upcoming-questions", updatedUpcoming);
     }
+  }
+
+  private async removeQuestionFromUpcomingById(questionId: string) {
+    const upcoming = (await this.room.storage.get<Question[]>("upcoming-questions")) || [];
+    const updated = upcoming.filter(q => q.id !== questionId);
+    await this.room.storage.put("upcoming-questions", updated);
   }
 
   private async getAllPlayers(): Promise<Player[]> {
