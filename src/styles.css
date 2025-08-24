@@ -2413,8 +2413,8 @@ a:hover { text-decoration: underline; }
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  gap: 12px;
-  padding: 10px;
+  gap: 10px;
+  padding: 6px 8px;
   border: 2px solid var(--border);
   border-radius: 6px;
   background: var(--surface);
@@ -2527,6 +2527,12 @@ a:hover { text-decoration: underline; }
   background: var(--surface-muted);
   border-radius: 6px;
   border: 1px solid var(--border);
+}
+
+/* Ensure history item buttons align with playlist buttons */
+.history-item .btn {
+  align-self: flex-start;
+  margin-top: 2px;
 }
 .btn-primary { background: var(--primary); color: #fff; border-color: var(--primary); }
 .btn-primary:hover { background: var(--primary-hover); }
