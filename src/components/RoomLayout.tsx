@@ -418,7 +418,7 @@ function AdminUnified({ roomId }: { roomId: string }) {
           </div>
           
           <div className="settings-content">
-            <div className="settings-row">
+            <div className="settings-inline">
               <div className="setting-group">
                 <label>Number of Questions:</label>
                 <select 
@@ -442,48 +442,48 @@ function AdminUnified({ roomId }: { roomId: string }) {
                   {topicFilterType === 'whitelist' ? 'Whitelist' : 'Blacklist'}
                 </button>
               </div>
-            </div>
 
-            <div className="setting-group">
-              <label>Topics:</label>
-              <div className="tag-input-container">
-                <div className="tag-input">
-                  {topicFilters.map((topic, index) => (
-                    <span key={index} className="tag-input-tag">
-                      {topic}
+              <div className="setting-group">
+                <label>Topics:</label>
+                <div className="tag-input-container">
+                  <div className="tag-input">
+                    {topicFilters.map((topic, index) => (
+                      <span key={index} className="tag-input-tag">
+                        {topic}
+                        <button 
+                          className="tag-remove-btn" 
+                          onClick={() => removeTopic(topic)}
+                          title="Remove topic"
+                        >
+                          <X size={10} />
+                        </button>
+                      </span>
+                    ))}
+                    <input 
+                      type="text" 
+                      placeholder={`Add ${topicFilterType === 'whitelist' ? 'allowed' : 'forbidden'} topics...`}
+                      value={newTopic}
+                      onChange={(e) => setNewTopic(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && newTopic.trim()) {
+                          e.preventDefault();
+                          addTopic();
+                        } else if (e.key === 'Backspace' && !newTopic && topicFilters.length > 0) {
+                          removeTopic(topicFilters[topicFilters.length - 1]);
+                        }
+                      }}
+                      className="tag-input-field"
+                    />
+                    {newTopic.trim() && (
                       <button 
-                        className="tag-remove-btn" 
-                        onClick={() => removeTopic(topic)}
-                        title="Remove topic"
+                        className="tag-add-btn" 
+                        onClick={addTopic}
+                        title="Add topic"
                       >
-                        <X size={10} />
+                        <Plus size={14} />
                       </button>
-                    </span>
-                  ))}
-                  <input 
-                    type="text" 
-                    placeholder={`Add ${topicFilterType === 'whitelist' ? 'allowed' : 'forbidden'} topics...`}
-                    value={newTopic}
-                    onChange={(e) => setNewTopic(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' && newTopic.trim()) {
-                        e.preventDefault();
-                        addTopic();
-                      } else if (e.key === 'Backspace' && !newTopic && topicFilters.length > 0) {
-                        removeTopic(topicFilters[topicFilters.length - 1]);
-                      }
-                    }}
-                    className="tag-input-field"
-                  />
-                  {newTopic.trim() && (
-                    <button 
-                      className="tag-add-btn" 
-                      onClick={addTopic}
-                      title="Add topic"
-                    >
-                      <Plus size={14} />
-                    </button>
-                  )}
+                    )}
+                  </div>
                 </div>
               </div>
             </div>

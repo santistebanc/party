@@ -2309,15 +2309,17 @@ a:hover { text-decoration: underline; }
   padding: 10px;
 }
 
-.settings-row {
+.settings-inline {
   display: flex;
-  gap: 16px;
-  margin-bottom: 8px;
+  gap: 20px;
+  align-items: flex-start;
+  width: 100%;
 }
 
-.settings-row .setting-group {
+.settings-inline .setting-group {
   flex: 1;
   margin-bottom: 0;
+  min-width: 0;
 }
 
 .setting-group {
