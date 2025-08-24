@@ -339,31 +339,35 @@ function AdminUnified({ roomId }: { roomId: string }) {
           const rowClass = answered ? (h.result.correct ? 'history-item history-correct' : 'history-item history-wrong') : (isCurrent ? 'history-item history-current' : 'history-item');
           return (
             <div key={h.index} className={rowClass}>
-              <div className="row" style={{ justifyContent: 'space-between' }}>
-                <div>
-                  <div style={{ fontWeight: 700 }}>{h.index + 1}. {h.question?.text}</div>
-                  {answered ? (
-                    <div className={h.result.correct ? 'result-correct' : 'result-wrong'}>
-                      {playerName ? <><span style={{ fontWeight: 600 }}>{playerName}</span> </> : null}
-                      {h.result.correct ? 'gained' : 'lost'} {h.result.correct ? '+' : ''}{h.result.delta}
-                      {h.result.answer ? <> answer given: "{h.result.answer}"</> : null}
-                    </div>
-                  ) : isCurrent ? (
-                    <div className="subtitle">
-                      {game?.buzzQueue && game.buzzQueue.length > 0 ? (
-                        (() => {
-                          const firstBuzzerId = game.buzzQueue[0];
-                          const buzzerPlayer = players.find(p => p.userId === firstBuzzerId);
-                          return `${buzzerPlayer?.name || `Player ${firstBuzzerId.slice(0,4)}`} buzzed`;
-                        })()
-                      ) : (
-                        'In progress…'
-                      )}
-                    </div>
-                  ) : null}
+              <div className="history-content">
+                <div className="history-question">
+                  <span className="question-number">{h.index + 1}.</span>
+                  <span className="question-text">{h.question?.text}</span>
+                  <span className="question-answer">"{h.question?.answer}"</span>
                 </div>
-                <button className="btn" onClick={() => repeatToUpcoming(h.question)}>Repeat</button>
+                {answered ? (
+                  <div className="history-result">
+                    <span className="player-name">{playerName}</span>
+                    <span className="player-answer">"{h.result.answer}"</span>
+                    <span className={`points ${h.result.correct ? 'positive' : 'negative'}`}>
+                      {h.result.correct ? '+' : ''}{h.result.delta}
+                    </span>
+                  </div>
+                ) : isCurrent ? (
+                  <div className="history-status">
+                    {game?.buzzQueue && game.buzzQueue.length > 0 ? (
+                      (() => {
+                        const firstBuzzerId = game.buzzQueue[0];
+                        const buzzerPlayer = players.find(p => p.userId === firstBuzzerId);
+                        return `${buzzerPlayer?.name || `Player ${firstBuzzerId.slice(0,4)}`} buzzed`;
+                      })()
+                    ) : (
+                      'In progress…'
+                    )}
+                  </div>
+                ) : null}
               </div>
+              <button className="btn" onClick={() => repeatToUpcoming(h.question)}>Repeat</button>
             </div>
           );
         })}
