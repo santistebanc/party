@@ -2438,6 +2438,26 @@ a:hover { text-decoration: underline; }
   color: #9ca3af;
 }
 
+.tag-add-btn {
+  background: var(--primary);
+  border: none;
+  color: white;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  min-width: 24px;
+  height: 24px;
+}
+
+.tag-add-btn:hover {
+  background: #1d4ed8;
+  transform: scale(1.05);
+}
+
 /* Select Dropdown Styling */
 .room-select {
   width: 100%;

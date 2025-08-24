@@ -2,7 +2,7 @@ import React from 'react';
 import { DndContext, closestCenter, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy, useSortable, arrayMove } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { Eye, Settings, X } from 'lucide-react';
+import { Eye, Settings, X, Plus } from 'lucide-react';
 import { RoomPlay } from './RoomPlay';
 import { RoomSettings } from './RoomSettings';
 import { RoomChat } from './RoomChat';
@@ -475,6 +475,15 @@ function AdminUnified({ roomId }: { roomId: string }) {
                     }}
                     className="tag-input-field"
                   />
+                  {newTopic.trim() && (
+                    <button 
+                      className="tag-add-btn" 
+                      onClick={addTopic}
+                      title="Add topic"
+                    >
+                      <Plus size={14} />
+                    </button>
+                  )}
                 </div>
               </div>
             </div>
