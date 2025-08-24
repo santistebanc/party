@@ -1,5 +1,6 @@
 import type * as Party from "partykit/server";
 import { generateText } from "ai";
+import { openai } from "@ai-sdk/openai";
 
 interface Player {
   id: string;
@@ -552,7 +553,7 @@ export default class RoomServer implements Party.Server {
       process.env.OPENAI_API_KEY = apiKey;
       
       const result = await generateText({
-        model: 'gpt-3.5-turbo',
+        model: openai('gpt-3.5-turbo'),
         prompt: prompt,
       });
       
