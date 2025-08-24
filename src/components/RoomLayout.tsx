@@ -421,14 +421,16 @@ function AdminUnified({ roomId }: { roomId: string }) {
             <div className="settings-row">
               <div className="setting-group">
                 <label>Number of Questions:</label>
-                <input 
-                  type="number" 
-                  min="1" 
-                  max="20" 
+                <select 
                   value={questionCount} 
-                  onChange={(e) => setQuestionCount(Math.max(1, Math.min(20, parseInt(e.target.value) || 1)))}
-                  className="room-input"
-                />
+                  onChange={(e) => setQuestionCount(parseInt(e.target.value))}
+                  className="room-select"
+                >
+                  <option value={1}>1</option>
+                  <option value={5}>5</option>
+                  <option value={10}>10</option>
+                  <option value={20}>20</option>
+                </select>
               </div>
 
               <div className="setting-group">

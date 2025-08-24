@@ -2438,6 +2438,29 @@ a:hover { text-decoration: underline; }
   color: #9ca3af;
 }
 
+/* Select Dropdown Styling */
+.room-select {
+  width: 100%;
+  padding: 6px 8px;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  background: #ffffff;
+  color: #111827;
+  font-size: 13px;
+  cursor: pointer;
+  transition: border-color 0.2s ease;
+}
+
+.room-select:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+}
+
+.room-select:hover {
+  border-color: #9ca3af;
+}
+
 @keyframes tagAppear {
   from {
     opacity: 0;
