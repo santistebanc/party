@@ -19,7 +19,7 @@ interface ChatMessage {
 }
 
 export type GameStatus = "idle" | "running" | "await-next" | "finished";
-export interface Question { id: string; text: string; answer: string; points: number; }
+export interface Question { id: string; text: string; answer: string; points: number; topics?: string[]; }
 export interface GameState {
   status: GameStatus;
   questions: Question[];

@@ -15,6 +15,7 @@ interface Question {
   text: string;
   answer: string;
   points: number;
+  topics?: string[];
 }
 
 type GameStatus = "idle" | "running" | "await-next" | "finished";
@@ -555,7 +556,7 @@ export default class RoomServer implements Party.Server {
       const existingQuestionTexts = allExistingQuestions.map(q => q.text.toLowerCase().trim());
       
       // Create a more comprehensive prompt with all existing questions
-      const prompt = `Generate ${data?.questionCount || 5} completely unique trivia questions with answers and point values. 
+      const prompt = `Generate ${data?.questionCount || 5} completely unique trivia questions with answers, point values, and topic tags. 
 
 CRITICAL REQUIREMENTS:
 - Each question must be COMPLETELY DIFFERENT from ALL existing questions
@@ -563,6 +564,7 @@ CRITICAL REQUIREMENTS:
 - Each question should cover a different category (science, history, geography, arts, sports, etc.)
 - Questions should be engaging and varied in difficulty
 - Points should reflect question difficulty (5-15 for easy, 16-30 for medium, 31-50 for hard)
+- Each question must include 2-4 relevant topic tags that accurately describe the subject matter
 
 ${data?.topicFilters && data.topicFilters.length > 0 ? 
   `${data.topicFilterType === 'whitelist' ? 
@@ -581,6 +583,7 @@ IMPORTANT: Analyze the existing questions above and ensure your new questions ar
 3. No similar themes or concepts
 4. Unique difficulty levels
 5. Engaging and varied
+6. Include relevant topic tags (e.g., ['science', 'chemistry', 'elements'] or ['history', 'ancient rome', 'emperors'])
 
 Double-check that none of your new questions overlap with the existing ones above.`;
       
@@ -598,7 +601,8 @@ Double-check that none of your new questions overlap with the existing ones abov
         questions: z.array(z.object({
           text: z.string().describe("The trivia question text"),
           answer: z.string().describe("The correct answer to the question"),
-          points: z.number().min(5).max(50).describe("Points value between 5 and 50")
+          points: z.number().min(5).max(50).describe("Points value between 5 and 50"),
+          topics: z.array(z.string()).describe("Array of 2-4 relevant topic tags for this question (e.g., ['science', 'chemistry', 'elements'] or ['history', 'ancient rome', 'emperors'])")
         })).length(5)
       });
       
@@ -612,12 +616,13 @@ Double-check that none of your new questions overlap with the existing ones abov
       const questions = result.object.questions;
       
       // Validate and normalize the questions
-      const normalized = questions.map((q: { text?: string; answer?: string; points?: number }) => ({
+      const normalized = questions.map((q: { text?: string; answer?: string; points?: number; topics?: string[] }) => ({
         id: crypto.randomUUID(),
         text: q.text || '',
         answer: q.answer || '',
-        points: Math.max(5, Math.min(50, Number(q.points) || 10))
-      })).filter((q: { text: string; answer: string; points: number }) => q.text && q.answer);
+        points: Math.max(5, Math.min(50, Number(q.points) || 10)),
+        topics: q.topics || []
+      })).filter((q: { text: string; answer: string; points: number; topics: string[] }) => q.text && q.answer);
       
       if (normalized.length > 0) {
         // Add new questions to upcoming list

@@ -166,8 +166,19 @@ function AdminUnified({ roomId }: { roomId: string }) {
     setTopicFilterType(prev => prev === 'whitelist' ? 'blacklist' : 'whitelist');
   };
 
-  const updateUpcoming = (index: number, field: 'text'|'answer'|'points', value: string) => {
-    const next = upcoming.map((q, i) => i === index ? { ...q, [field]: field === 'points' ? Number(value) : value } : q);
+  const updateUpcoming = (index: number, field: 'text'|'answer'|'points'|'topics', value: string) => {
+    const next = upcoming.map((q, i) => {
+      if (i === index) {
+        if (field === 'points') {
+          return { ...q, [field]: Number(value) };
+        } else if (field === 'topics') {
+          return { ...q, [field]: value.split(',').map(t => t.trim()).filter(t => t.length > 0) };
+        } else {
+          return { ...q, [field]: value };
+        }
+      }
+      return q;
+    });
     setUpcoming(next); actions.setUpcoming(next);
   };
 
@@ -238,7 +249,8 @@ function AdminUnified({ roomId }: { roomId: string }) {
       id: `blank-${Date.now()}`,
       text: '',
       answer: '',
-      points: 10
+      points: 10,
+      topics: []
     };
     
     // Add to upcoming questions
@@ -328,6 +340,23 @@ function AdminUnified({ roomId }: { roomId: string }) {
                     <input className="room-input" type="number" min={1} max={100} value={q.points} onChange={(e) => onUpdate(idx, 'points', e.target.value)} />
                   ) : (
                     <div className="cell-text">{q.points} pts</div>
+                  )}
+                </div>
+                <div className="cell cell-topics">
+                  {editing && editing.list === list && editing.index === idx ? (
+                    <input className="room-input" placeholder="Topics (comma separated)" value={q.topics?.join(', ') || ''} onChange={(e) => onUpdate(idx, 'topics', e.target.value)} />
+                  ) : (
+                    <div className="cell-text">
+                      {q.topics && q.topics.length > 0 ? (
+                        <div className="topic-tags-display">
+                          {q.topics.map((topic, index) => (
+                            <span key={index} className="topic-tag-display">{topic}</span>
+                          ))}
+                        </div>
+                      ) : (
+                        <span className="muted">No topics</span>
+                      )}
+                    </div>
                   )}
                 </div>
                 <div className="cell cell-actions">

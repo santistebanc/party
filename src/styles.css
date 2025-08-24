@@ -283,7 +283,7 @@ body {
 /* Admin list row layout for consistent spacing in edit/view modes */
 .admin-list-row {
   display: grid !important;
-  grid-template-columns: 2fr 1fr 90px auto;
+  grid-template-columns: 2fr 1fr 90px 200px auto;
   gap: 10px;
   align-items: center;
   padding: 6px;
@@ -291,6 +291,23 @@ body {
 .admin-list-row .cell { display: flex; align-items: center; min-height: 32px; }
 .admin-list-row .cell-text { padding: 6px 8px; width: 100%; }
 .admin-list-row .cell-actions { display: flex; gap: 6px; justify-content: flex-end; }
+
+.topic-tags-display {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.topic-tag-display {
+  display: inline-block;
+  background: #e0e7ff;
+  border: 1px solid #c7d2fe;
+  border-radius: 8px;
+  padding: 2px 6px;
+  font-size: 11px;
+  color: #3730a3;
+  white-space: nowrap;
+}
 
 /* History list states with high contrast */
 .history-item { padding: 8px; border: 1px solid #d4d4d4; background: #ffffff; }
