@@ -25,6 +25,7 @@ interface GameState {
   scores: Record<string, number>; // userId -> score
   lastResult?: { userId: string; correct: boolean; delta: number; answer?: string };
   perQuestion?: { answered: boolean; result?: { userId: string; correct: boolean; delta: number; answer?: string } }[];
+  currentQuestionAnsweredBy?: Set<string>; // userIds who have already answered current question
 }
 
 interface RoomMessage {
@@ -295,6 +296,7 @@ export default class RoomServer implements Party.Server {
     this.game.currentResponder = undefined;
     this.game.lastResult = undefined;
     this.game.perQuestion = (this.game.questions || []).map(() => ({ answered: false }));
+    this.game.currentQuestionAnsweredBy = new Set();
     this.broadcastGame();
     // Remove the now-current question from upcoming playlist immediately
     try {
@@ -311,6 +313,10 @@ export default class RoomServer implements Party.Server {
     const player = await this.room.storage.get<Player>(`player:${sender.id}`);
     if (!player) return;
     const userId = player.userId;
+    
+    // Prevent players who have already answered from buzzing again
+    if (this.game.currentQuestionAnsweredBy?.has(userId)) return;
+    
     // allow everyone to buzz until currentResponder answers
     if (!this.game.buzzQueue.includes(userId)) {
       this.game.buzzQueue.push(userId);
@@ -327,6 +333,9 @@ export default class RoomServer implements Party.Server {
     if (!player) return;
     const userId = player.userId;
     if (this.game.currentResponder !== userId) return; // not your turn
+    
+    // Check if this player has already answered the current question
+    if (this.game.currentQuestionAnsweredBy?.has(userId)) return; // already answered
 
     const q = this.game.questions[this.game.currentIndex];
     if (!q) return;
@@ -342,6 +351,12 @@ export default class RoomServer implements Party.Server {
     }
     this.game.scores[userId] = (this.game.scores[userId] || 0) + delta;
     this.game.lastResult = { userId, correct: isCorrect, delta, answer: (data.text || '').toString() };
+    
+    // Mark this player as having answered the current question
+    if (!this.game.currentQuestionAnsweredBy) {
+      this.game.currentQuestionAnsweredBy = new Set();
+    }
+    this.game.currentQuestionAnsweredBy.add(userId);
 
     if (isCorrect) {
       // lock until next question
@@ -381,6 +396,7 @@ export default class RoomServer implements Party.Server {
       this.game.buzzQueue = [];
       this.game.currentResponder = undefined;
       this.game.lastResult = undefined;
+      this.game.currentQuestionAnsweredBy = new Set();
       // Remove the new current question from upcoming playlist as it starts
       const current = this.game.questions[this.game.currentIndex];
       if (current) {
@@ -414,6 +430,7 @@ export default class RoomServer implements Party.Server {
     this.game.lastResult = undefined;
     this.game.scores = {};
     this.game.perQuestion = (this.game.questions || []).map(() => ({ answered: false }));
+    this.game.currentQuestionAnsweredBy = new Set();
     this.broadcastGame();
     await this.broadcastAdminState();
   }

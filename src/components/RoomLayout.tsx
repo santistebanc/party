@@ -194,6 +194,12 @@ function AdminUnified({ roomId }: { roomId: string }) {
     }
   };
 
+  const shufflePlaylist = () => {
+    const shuffled = [...upcoming].sort(() => Math.random() - 0.5);
+    setUpcoming(shuffled);
+    actions.setUpcoming(shuffled);
+  };
+
   const startGame = () => actions.startGame();
   const resetGame = () => actions.resetGame();
   const nextQuestion = () => actions.nextQuestion();
@@ -344,6 +350,7 @@ function AdminUnified({ roomId }: { roomId: string }) {
       {/* Controls above the first list (history) */}
       <div className="row" style={{ gap: 6, justifyContent: 'flex-end', alignItems: 'center' }}>
         <button className="btn" onClick={handleGenerate}>Generate</button>
+        <button className="btn" onClick={shufflePlaylist}>Shuffle</button>
         <button className="btn" onClick={startGame}>Start</button>
         <button className="btn" onClick={nextQuestion}>Next</button>
         <button className="btn" onClick={resetGame}>Reset</button>

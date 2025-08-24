@@ -585,21 +585,23 @@ body {
 .chat-message {
   padding: 6px 8px;
   margin-bottom: 6px;
-  background: #0f172a;
-  border: 1px solid #1f2937;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
   border-radius: 4px;
-  color: #e5e7eb;
+  color: #111827;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .chat-message.system {
-  background: rgba(241, 245, 249, 0.8);
-  color: #64748b;
+  background: #f8fafc;
+  color: #475569;
   font-style: italic;
+  border-color: #e2e8f0;
 }
 
 .chat-message .player-name {
   font-weight: 600;
-  color: #1e293b;
+  color: #2563eb;
   margin-right: 8px;
 }
 
@@ -622,17 +624,31 @@ body {
 .chat-input {
   flex: 1;
   padding: 6px 8px;
-  border: 1px solid #374151;
+  border: 1px solid #d1d5db;
   font-size: 13px;
   transition: border-color 0.2s ease;
-  background: #0b0f14;
-  color: #e5e7eb;
+  background: #ffffff;
+  color: #111827;
   border-radius: 4px;
 }
 
 .chat-input:focus {
   outline: none;
-  border-color: #475569;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+/* Ensure chat message text has proper contrast */
+.chat-message {
+  color: #111827 !important;
+}
+
+.chat-message .player-name {
+  color: #2563eb !important;
+}
+
+.chat-message.system {
+  color: #475569 !important;
 }
 
 /* QR Code */
@@ -1204,12 +1220,12 @@ body {
 
 .chat-message .player-name {
   font-weight: 600;
-  color: #667eea;
+  color: #2563eb;
   margin-right: 8px;
 }
 
 .chat-message.system .player-name {
-  color: #666;
+  color: #64748b;
 }
 
 /* Header Navigation */
@@ -2043,12 +2059,12 @@ body {
 
 .chat-message .player-name {
   font-weight: 600;
-  color: #667eea;
+  color: #2563eb;
   margin-right: 8px;
 }
 
 .chat-message.system .player-name {
-  color: #666;
+  color: #64748b;
 }
 
 /* Header Navigation */
@@ -2236,11 +2252,11 @@ a:hover { text-decoration: underline; }
 
 .players-list, .chat-messages { background: transparent; padding: 6px; }
 .player-item, .chat-message {
-  background: rgba(255,255,255,0.10);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 4px;
   padding: 6px 8px;
-  box-shadow: var(--shadow);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 .player-avatar { background: var(--surface-muted); color: var(--muted); width: 20px; height: 20px; }
 .player-item .player-name { color: var(--text) !important; }
