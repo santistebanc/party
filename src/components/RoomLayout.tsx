@@ -341,7 +341,6 @@ function AdminUnified({ roomId }: { roomId: string }) {
             <div key={h.index} className={rowClass}>
               <div className="history-content">
                 <div className="history-question">
-                  <span className="question-number">{h.index + 1}.</span>
                   <span className="question-text">{h.question?.text}</span>
                   <span className="question-answer">"{h.question?.answer}"</span>
                 </div>
