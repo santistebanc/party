@@ -418,38 +418,42 @@ function AdminUnified({ roomId }: { roomId: string }) {
           </div>
           
           <div className="settings-content">
-            <div className="setting-group">
-              <label>Number of Questions:</label>
-              <input 
-                type="number" 
-                min="1" 
-                max="20" 
-                value={questionCount} 
-                onChange={(e) => setQuestionCount(Math.max(1, Math.min(20, parseInt(e.target.value) || 1)))}
-                className="room-input"
-              />
-            </div>
+            <div className="settings-row">
+              <div className="setting-group">
+                <label>Number of Questions:</label>
+                <input 
+                  type="number" 
+                  min="1" 
+                  max="20" 
+                  value={questionCount} 
+                  onChange={(e) => setQuestionCount(Math.max(1, Math.min(20, parseInt(e.target.value) || 1)))}
+                  className="room-input"
+                />
+              </div>
 
-            <div className="setting-group">
-              <label>Topic Filtering:</label>
-              <div className="filter-controls">
+              <div className="setting-group">
+                <label>Filter Type:</label>
                 <button 
                   className={`filter-type-btn ${topicFilterType === 'whitelist' ? 'active' : ''}`}
                   onClick={toggleFilterType}
                 >
                   {topicFilterType === 'whitelist' ? 'Whitelist' : 'Blacklist'}
                 </button>
-                <div className="topic-input-group">
-                  <input 
-                    type="text" 
-                    placeholder={`Add ${topicFilterType === 'whitelist' ? 'allowed' : 'forbidden'} topics...`}
-                    value={newTopic}
-                    onChange={(e) => setNewTopic(e.target.value)}
-                    onKeyPress={(e) => e.key === 'Enter' && addTopic()}
-                    className="room-input"
-                  />
-                  <button className="btn btn-small" onClick={addTopic}>Add</button>
-                </div>
+              </div>
+            </div>
+
+            <div className="setting-group">
+              <label>Topics:</label>
+              <div className="topic-input-group">
+                <input 
+                  type="text" 
+                  placeholder={`Add ${topicFilterType === 'whitelist' ? 'allowed' : 'forbidden'} topics...`}
+                  value={newTopic}
+                  onChange={(e) => setNewTopic(e.target.value)}
+                  onKeyPress={(e) => e.key === 'Enter' && addTopic()}
+                  className="room-input"
+                />
+                <button className="btn btn-small" onClick={addTopic}>Add</button>
               </div>
               
               {topicFilters.length > 0 && (
