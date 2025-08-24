@@ -163,6 +163,12 @@ export function useRoomConnection(
           case 'admin-state':
             setAdminState(message.data);
             break;
+          case 'admin-generate-questions-success':
+            // Questions were generated successfully, admin state will be updated
+            break;
+          case 'admin-generate-questions-error':
+            console.error('AI question generation failed:', message.data?.error);
+            break;
         }
       } catch (error) {
         console.error('Error parsing message:', error);
@@ -199,6 +205,7 @@ export function useRoomConnection(
   const nextQuestion = () => socketRef.current?.send(JSON.stringify({ type: 'next-question' }));
   const finishGame = () => socketRef.current?.send(JSON.stringify({ type: 'finish-game' }));
   const resetGame = () => socketRef.current?.send(JSON.stringify({ type: 'reset-game' }));
+  const generateQuestions = () => socketRef.current?.send(JSON.stringify({ type: 'admin-generate-questions' }));
 
   const leaveRoom = () => {
     if (socketRef.current) {
@@ -218,6 +225,6 @@ export function useRoomConnection(
     adminState,
     sendChat,
     leaveRoom,
-    actions: { startGame, setQuestions, setUpcoming, setBank, repeatQuestion, buzz, submitAnswer, nextQuestion, finishGame, resetGame }
+    actions: { startGame, setQuestions, setUpcoming, setBank, repeatQuestion, buzz, submitAnswer, nextQuestion, finishGame, resetGame, generateQuestions }
   };
 } 

@@ -106,6 +106,7 @@ function AdminUnified({ roomId }: { roomId: string }) {
   const [editing, setEditing] = useState<{ list: 'upcoming' | 'bank'; index: number } | null>(null);
   const [expandedQuestions, setExpandedQuestions] = useState<Set<string>>(new Set());
   const [expandedAnswers, setExpandedAnswers] = useState<Set<string>>(new Set());
+  const [isGenerating, setIsGenerating] = useState(false);
   const editingRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -120,17 +121,25 @@ function AdminUnified({ roomId }: { roomId: string }) {
     return () => document.removeEventListener('mousedown', handleGlobalClick);
   }, [editing]);
 
-  useEffect(() => { if (adminState) setUpcoming(adminState.upcoming || []); }, [adminState?.upcoming]);
+  useEffect(() => { 
+    if (adminState) {
+      setUpcoming(adminState.upcoming || []);
+      // Reset generating state when admin state updates (indicating AI generation completed)
+      if (isGenerating) {
+        setIsGenerating(false);
+      }
+    }
+  }, [adminState?.upcoming, isGenerating]);
 
   const handleGenerate = async () => {
+    setIsGenerating(true);
     try {
-      const res = await fetch('/questions.sample.json');
-      const all = await res.json();
-      const normalized = all.map((q: any) => ({ id: crypto.randomUUID(), text: q.text, answer: q.answer, points: Number(q.points) || 10 }));
-      const next = [...(upcoming || []), ...normalized];
-      setUpcoming(next);
-      actions.setUpcoming(next);
-    } catch (e) { console.error('Failed to load questions.sample.json', e); }
+      // Send message to server to generate AI questions
+      actions.generateQuestions();
+    } catch (e) { 
+      console.error('Failed to request AI questions:', e);
+      setIsGenerating(false);
+    }
   };
 
   const updateUpcoming = (index: number, field: 'text'|'answer'|'points', value: string) => {
@@ -341,19 +350,21 @@ function AdminUnified({ roomId }: { roomId: string }) {
 
   return (
     <div className="stack">
-      {/* Navigation Links */}
-      <div className="row" style={{ gap: 6, justifyContent: 'center', marginBottom: 16 }}>
-        <a href={`/?roomId=${roomId}&view=board`} className="btn" target="_blank">Open Board</a>
-        <a href={`/?roomId=${roomId}&view=player`} className="btn" target="_blank">Open Player Link</a>
-      </div>
-
-      {/* Controls above the first list (history) */}
-      <div className="row" style={{ gap: 6, justifyContent: 'flex-end', alignItems: 'center' }}>
-        <button className="btn" onClick={handleGenerate}>Generate</button>
-        <button className="btn" onClick={shufflePlaylist}>Shuffle</button>
-        <button className="btn" onClick={startGame}>Start</button>
-        <button className="btn" onClick={nextQuestion}>Next</button>
-        <button className="btn" onClick={resetGame}>Reset</button>
+      {/* All controls in one line */}
+      <div className="row" style={{ gap: 6, justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+        <div className="row" style={{ gap: 6 }}>
+          <a href={`/?roomId=${roomId}&view=board`} className="btn" target="_blank">Open Board</a>
+          <a href={`/?roomId=${roomId}&view=player`} className="btn" target="_blank">Open Player Link</a>
+        </div>
+        <div className="row" style={{ gap: 6 }}>
+          <button className="btn" onClick={handleGenerate} disabled={isGenerating}>
+            {isGenerating ? 'Generating...' : 'Generate'}
+          </button>
+          <button className="btn" onClick={shufflePlaylist}>Shuffle</button>
+          <button className="btn" onClick={startGame}>Start</button>
+          <button className="btn" onClick={nextQuestion}>Next</button>
+          <button className="btn" onClick={resetGame}>Reset</button>
+        </div>
       </div>
 
       <div className="section-card">

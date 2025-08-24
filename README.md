@@ -1,11 +1,40 @@
-## 🎈 party
+# Party Trivia Game
 
-Welcome to the party, pal!
+A real-time multiplayer trivia game built with PartyKit and React.
 
-This is a [Partykit](https://partykit.io) project, which lets you create real-time collaborative applications with minimal coding effort.
+## Setup
 
-[`server.ts`](./src/server.ts) is the server-side code, which is responsible for handling WebSocket events and HTTP requests. [`client.ts`](./src/client.ts) is the client-side code, which connects to the server and listens for events.
+1. Install dependencies:
+```bash
+npm install
+```
 
-You can start developing by running `npm run dev` and opening [http://localhost:1999](http://localhost:1999) in your browser. When you're ready, you can deploy your application on to the PartyKit cloud with `npm run deploy`.
+2. Set up your OpenAI API key:
+   - Create a `.env` file in the project root
+   - Add your OpenAI API key: `OPENAI_API_KEY=your_actual_api_key_here`
+   - Get your API key from [OpenAI Platform](https://platform.openai.com/api-keys)
 
-Refer to our docs for more information: https://github.com/partykit/partykit/blob/main/README.md. For more help, reach out to us on [Discord](https://discord.gg/g5uqHQJc3z), [GitHub](https://github.com/partykit/partykit), or [Twitter](https://twitter.com/partykit_io).
+3. Run the development server:
+```bash
+npm run dev
+```
+
+## Features
+
+- **Real-time multiplayer**: Built with PartyKit for instant synchronization
+- **AI-powered questions**: Automatically generates unique trivia questions using GPT-3.5-turbo
+- **Drag & drop playlist**: Reorder questions in the admin interface
+- **Player management**: Track scores, buzzes, and answers
+- **Multiple views**: Admin, board, player, and chat interfaces
+
+## How to Use
+
+1. **Create a room** from the lobby
+2. **Generate questions** using the AI-powered Generate button
+3. **Start the game** and let players join
+4. **Players buzz** to answer questions
+5. **Track scores** and game progress in real-time
+
+## Environment Variables
+
+- `OPENAI_API_KEY`: Required for AI question generation

@@ -2234,6 +2234,11 @@ a:hover { text-decoration: underline; }
   box-shadow: var(--shadow);
 }
 .btn:hover { background: rgba(255,255,255,0.16); }
+.btn:disabled { 
+  opacity: 0.6; 
+  cursor: not-allowed; 
+  background: rgba(255,255,255,0.08) !important; 
+}
 .btn-primary { background: var(--primary); color: #fff; border-color: var(--primary); }
 .btn-primary:hover { background: var(--primary-hover); }
 .btn-secondary { background: var(--surface-muted); color: var(--text); border-color: var(--border); }

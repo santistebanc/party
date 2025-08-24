@@ -1,4 +1,5 @@
 import type * as Party from "partykit/server";
+import { generateText } from "ai";
 
 interface Player {
   id: string;
@@ -40,6 +41,7 @@ interface RoomMessage {
     | "admin-set-upcoming"
     | "admin-set-bank"
     | "admin-repeat-question"
+    | "admin-generate-questions"
     | "admin-state"
     | "start-game"
     | "buzz"
@@ -94,14 +96,8 @@ export default class RoomServer implements Party.Server {
         case "admin-repeat-question":
           await this.handleRepeatQuestion(parsedMessage.data);
           break;
-        case "admin-set-upcoming":
-          await this.handleSetUpcoming(parsedMessage.data);
-          break;
-        case "admin-set-bank":
-          await this.handleSetBank(parsedMessage.data);
-          break;
-        case "admin-repeat-question":
-          await this.handleRepeatQuestion(parsedMessage.data);
+        case "admin-generate-questions":
+          await this.handleGenerateQuestions(sender);
           break;
         case "start-game":
           await this.handleStartGame(sender);
@@ -526,6 +522,79 @@ export default class RoomServer implements Party.Server {
     }
     
     return players.sort((a, b) => a.joinedAt - b.joinedAt);
+  }
+
+  private async handleGenerateQuestions(sender: Party.Connection) {
+    try {
+      // Get existing questions to avoid duplicates
+      const upcoming = (await this.room.storage.get<Question[]>("upcoming-questions")) || [];
+      const existingQuestions = upcoming.map(q => q.text.toLowerCase().trim());
+      
+      const prompt = `Generate 5 unique trivia questions with answers and point values. 
+      Each question should be distinct and engaging. Avoid questions similar to these existing ones: ${existingQuestions.slice(0, 3).join(', ')}.
+      
+      Format each question as JSON with this exact structure:
+      {
+        "text": "Question text here?",
+        "answer": "Exact answer here",
+        "points": number_between_5_and_50
+      }
+      
+      Return only the JSON array, no additional text.`;
+      
+      const result = await generateText({
+        model: 'gpt-3.5-turbo',
+        prompt: prompt,
+      });
+      
+      // Parse the AI response
+      const aiResponse = result.text.trim();
+      let questions;
+      
+      try {
+        // Try to parse the response as JSON
+        questions = JSON.parse(aiResponse);
+      } catch (parseError) {
+        // If parsing fails, try to extract JSON from the response
+        const jsonMatch = aiResponse.match(/\[[\s\S]*\]/);
+        if (jsonMatch) {
+          questions = JSON.parse(jsonMatch[0]);
+        } else {
+          throw new Error('Failed to parse AI response');
+        }
+      }
+      
+      // Validate and normalize the questions
+      const normalized = questions.map((q: { text?: string; answer?: string; points?: number }) => ({
+        id: crypto.randomUUID(),
+        text: q.text || '',
+        answer: q.answer || '',
+        points: Math.max(5, Math.min(50, Number(q.points) || 10))
+      })).filter((q: { text: string; answer: string; points: number }) => q.text && q.answer);
+      
+      if (normalized.length > 0) {
+        // Add new questions to upcoming list
+        const updatedUpcoming = [...upcoming, ...normalized];
+        await this.room.storage.put("upcoming-questions", updatedUpcoming);
+        
+        // Send success response to sender
+        sender.send(JSON.stringify({
+          type: "admin-generate-questions-success",
+          data: { questions: normalized }
+        }));
+        
+        // Broadcast updated admin state to all
+        await this.broadcastAdminState();
+      }
+    } catch (error) {
+      console.error('Failed to generate AI questions:', error);
+      
+      // Send error response to sender
+      sender.send(JSON.stringify({
+        type: "admin-generate-questions-error",
+        data: { error: 'Failed to generate questions' }
+      }));
+    }
   }
 }
 
