@@ -10,8 +10,5 @@
   "parties": {
     "lobby": "src/lobby.ts",
     "room": "src/room.ts"
-  },
-  "env": {
-    "OPENAI_API_KEY": "required"
   }
 }

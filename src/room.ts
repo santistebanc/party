@@ -542,6 +542,15 @@ export default class RoomServer implements Party.Server {
       
       Return only the JSON array, no additional text.`;
       
+      // Access environment variable through PartyKit context
+      const apiKey = process.env.OPENAI_API_KEY;
+      if (!apiKey) {
+        throw new Error('OpenAI API key not configured');
+      }
+      
+      // Set the API key as an environment variable for the AI library
+      process.env.OPENAI_API_KEY = apiKey;
+      
       const result = await generateText({
         model: 'gpt-3.5-turbo',
         prompt: prompt,
