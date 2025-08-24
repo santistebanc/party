@@ -540,14 +540,25 @@ export default class RoomServer implements Party.Server {
 
   private async handleGenerateQuestions(data: any, sender: Party.Connection) {
     try {
-      // Get existing questions to avoid duplicates
+      // Get ALL existing questions to avoid duplicates comprehensively
       const upcoming = (await this.room.storage.get<Question[]>("upcoming-questions")) || [];
-      const existingQuestions = upcoming.map(q => q.text.toLowerCase().trim());
+      const bank = (await this.room.storage.get<Question[]>("bank-questions")) || [];
       
+      // Get questions from current game if it exists
+      let gameQuestions: Question[] = [];
+      if (this.game && this.game.questions) {
+        gameQuestions = this.game.questions;
+      }
+      
+      // Combine all existing questions and extract text for comparison
+      const allExistingQuestions = [...upcoming, ...bank, ...gameQuestions];
+      const existingQuestionTexts = allExistingQuestions.map(q => q.text.toLowerCase().trim());
+      
+      // Create a more comprehensive prompt with all existing questions
       const prompt = `Generate ${data?.questionCount || 5} completely unique trivia questions with answers and point values. 
 
-IMPORTANT REQUIREMENTS:
-- Each question must be completely different from the others
+CRITICAL REQUIREMENTS:
+- Each question must be COMPLETELY DIFFERENT from ALL existing questions
 - Avoid any duplicate topics, subjects, or themes
 - Each question should cover a different category (science, history, geography, arts, sports, etc.)
 - Questions should be engaging and varied in difficulty
@@ -561,16 +572,17 @@ ${data?.topicFilters && data.topicFilters.length > 0 ?
   ''
 }
 
-EXISTING QUESTIONS TO AVOID (do not create anything similar):
-${existingQuestions.slice(0, 3).join(', ')}
+EXISTING QUESTIONS TO AVOID (do not create anything similar to these):
+${existingQuestionTexts.join('\n')}
 
-Create questions that are:
-1. Diverse in subject matter
-2. Different difficulty levels
-3. Engaging and fun
-4. Completely unique from each other
+IMPORTANT: Analyze the existing questions above and ensure your new questions are:
+1. Completely different topics/subjects
+2. Different categories (science, history, geography, arts, sports, etc.)
+3. No similar themes or concepts
+4. Unique difficulty levels
+5. Engaging and varied
 
-Ensure each question is in a completely different category or topic area.`;
+Double-check that none of your new questions overlap with the existing ones above.`;
       
       // Access environment variable through PartyKit context
       const apiKey = process.env.OPENAI_API_KEY;
