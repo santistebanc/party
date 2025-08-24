@@ -1,6 +1,7 @@
 import type * as Party from "partykit/server";
-import { generateText } from "ai";
+import { generateObject } from "ai";
 import { openai } from "@ai-sdk/openai";
+import { z } from "zod";
 
 interface Player {
   id: string;
@@ -531,17 +532,25 @@ export default class RoomServer implements Party.Server {
       const upcoming = (await this.room.storage.get<Question[]>("upcoming-questions")) || [];
       const existingQuestions = upcoming.map(q => q.text.toLowerCase().trim());
       
-      const prompt = `Generate 5 unique trivia questions with answers and point values. 
-      Each question should be distinct and engaging. Avoid questions similar to these existing ones: ${existingQuestions.slice(0, 3).join(', ')}.
-      
-      Format each question as JSON with this exact structure:
-      {
-        "text": "Question text here?",
-        "answer": "Exact answer here",
-        "points": number_between_5_and_50
-      }
-      
-      Return only the JSON array, no additional text.`;
+      const prompt = `Generate 5 completely unique trivia questions with answers and point values. 
+
+IMPORTANT REQUIREMENTS:
+- Each question must be completely different from the others
+- Avoid any duplicate topics, subjects, or themes
+- Each question should cover a different category (science, history, geography, arts, sports, etc.)
+- Questions should be engaging and varied in difficulty
+- Points should reflect question difficulty (5-15 for easy, 16-30 for medium, 31-50 for hard)
+
+EXISTING QUESTIONS TO AVOID (do not create anything similar):
+${existingQuestions.slice(0, 3).join(', ')}
+
+Create questions that are:
+1. Diverse in subject matter
+2. Different difficulty levels
+3. Engaging and fun
+4. Completely unique from each other
+
+Ensure each question is in a completely different category or topic area.`;
       
       // Access environment variable through PartyKit context
       const apiKey = process.env.OPENAI_API_KEY;
@@ -552,27 +561,23 @@ export default class RoomServer implements Party.Server {
       // Set the API key as an environment variable for the AI library
       process.env.OPENAI_API_KEY = apiKey;
       
-      const result = await generateText({
-        model: openai('gpt-3.5-turbo'),
-        prompt: prompt,
+      // Define the Zod schema for structured output
+      const schema = z.object({
+        questions: z.array(z.object({
+          text: z.string().describe("The trivia question text"),
+          answer: z.string().describe("The correct answer to the question"),
+          points: z.number().min(5).max(50).describe("Points value between 5 and 50")
+        })).length(5)
       });
       
-      // Parse the AI response
-      const aiResponse = result.text.trim();
-      let questions;
+      const result = await generateObject({
+        model: openai('gpt-3.5-turbo'),
+        prompt: prompt,
+        schema: schema
+      });
       
-      try {
-        // Try to parse the response as JSON
-        questions = JSON.parse(aiResponse);
-      } catch (parseError) {
-        // If parsing fails, try to extract JSON from the response
-        const jsonMatch = aiResponse.match(/\[[\s\S]*\]/);
-        if (jsonMatch) {
-          questions = JSON.parse(jsonMatch[0]);
-        } else {
-          throw new Error('Failed to parse AI response');
-        }
-      }
+      // Extract questions from the structured response
+      const questions = result.object.questions;
       
       // Validate and normalize the questions
       const normalized = questions.map((q: { text?: string; answer?: string; points?: number }) => ({
