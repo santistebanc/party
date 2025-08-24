@@ -2,7 +2,7 @@ import React from 'react';
 import { DndContext, closestCenter, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy, useSortable, arrayMove } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { Eye } from 'lucide-react';
+import { Eye, Settings, X } from 'lucide-react';
 import { RoomPlay } from './RoomPlay';
 import { RoomSettings } from './RoomSettings';
 import { RoomChat } from './RoomChat';
@@ -107,6 +107,11 @@ function AdminUnified({ roomId }: { roomId: string }) {
   const [expandedQuestions, setExpandedQuestions] = useState<Set<string>>(new Set());
   const [expandedAnswers, setExpandedAnswers] = useState<Set<string>>(new Set());
   const [isGenerating, setIsGenerating] = useState(false);
+  const [showGenerationSettings, setShowGenerationSettings] = useState(false);
+  const [questionCount, setQuestionCount] = useState(5);
+  const [topicFilterType, setTopicFilterType] = useState<'whitelist' | 'blacklist'>('whitelist');
+  const [topicFilters, setTopicFilters] = useState<string[]>([]);
+  const [newTopic, setNewTopic] = useState('');
   const editingRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -134,12 +139,31 @@ function AdminUnified({ roomId }: { roomId: string }) {
   const handleGenerate = async () => {
     setIsGenerating(true);
     try {
-      // Send message to server to generate AI questions
-      actions.generateQuestions();
+      // Send message to server to generate AI questions with settings
+      actions.generateQuestions({
+        questionCount,
+        topicFilterType,
+        topicFilters
+      });
     } catch (e) { 
       console.error('Failed to request AI questions:', e);
       setIsGenerating(false);
     }
+  };
+
+  const addTopic = () => {
+    if (newTopic.trim() && !topicFilters.includes(newTopic.trim())) {
+      setTopicFilters([...topicFilters, newTopic.trim()]);
+      setNewTopic('');
+    }
+  };
+
+  const removeTopic = (topic: string) => {
+    setTopicFilters(topicFilters.filter(t => t !== topic));
+  };
+
+  const toggleFilterType = () => {
+    setTopicFilterType(prev => prev === 'whitelist' ? 'blacklist' : 'whitelist');
   };
 
   const updateUpcoming = (index: number, field: 'text'|'answer'|'points', value: string) => {
@@ -322,7 +346,7 @@ function AdminUnified({ roomId }: { roomId: string }) {
                     <div className={h.result.correct ? 'result-correct' : 'result-wrong'}>
                       {playerName ? <><span style={{ fontWeight: 600 }}>{playerName}</span> </> : null}
                       {h.result.correct ? 'gained' : 'lost'} {h.result.correct ? '+' : ''}{h.result.delta}
-                      {h.result.answer ? <> – "{h.result.answer}"</> : null}
+                      {h.result.answer ? <> answer given: "{h.result.answer}"</> : null}
                     </div>
                   ) : isCurrent ? (
                     <div className="subtitle">
@@ -357,15 +381,94 @@ function AdminUnified({ roomId }: { roomId: string }) {
           <a href={`/?roomId=${roomId}&view=player`} className="btn" target="_blank">Open Player Link</a>
         </div>
         <div className="row" style={{ gap: 6 }}>
-          <button className="btn" onClick={handleGenerate} disabled={isGenerating}>
-            {isGenerating ? 'Generating...' : 'Generate'}
-          </button>
+          <div className="double-button">
+            <button className="btn btn-left" onClick={handleGenerate} disabled={isGenerating}>
+              {isGenerating ? 'Generating...' : 'Generate'}
+            </button>
+            <button 
+              className="btn btn-right btn-icon" 
+              onClick={() => setShowGenerationSettings(!showGenerationSettings)}
+              title="Generation Settings"
+            >
+              <Settings size={16} />
+            </button>
+          </div>
           <button className="btn" onClick={shufflePlaylist}>Shuffle</button>
           <button className="btn" onClick={startGame}>Start</button>
           <button className="btn" onClick={nextQuestion}>Next</button>
           <button className="btn" onClick={resetGame}>Reset</button>
         </div>
       </div>
+
+      {/* Generation Settings Panel */}
+      {showGenerationSettings && (
+        <div className="generation-settings-panel">
+          <div className="panel-header">
+            <h4>Generation Settings</h4>
+            <button 
+              className="btn-icon close-btn" 
+              onClick={() => setShowGenerationSettings(false)}
+              title="Close Settings"
+            >
+              <X size={16} />
+            </button>
+          </div>
+          
+          <div className="settings-content">
+            <div className="setting-group">
+              <label>Number of Questions:</label>
+              <input 
+                type="number" 
+                min="1" 
+                max="20" 
+                value={questionCount} 
+                onChange={(e) => setQuestionCount(Math.max(1, Math.min(20, parseInt(e.target.value) || 1)))}
+                className="room-input"
+              />
+            </div>
+
+            <div className="setting-group">
+              <label>Topic Filtering:</label>
+              <div className="filter-controls">
+                <button 
+                  className={`filter-type-btn ${topicFilterType === 'whitelist' ? 'active' : ''}`}
+                  onClick={toggleFilterType}
+                >
+                  {topicFilterType === 'whitelist' ? 'Whitelist' : 'Blacklist'}
+                </button>
+                <div className="topic-input-group">
+                  <input 
+                    type="text" 
+                    placeholder={`Add ${topicFilterType === 'whitelist' ? 'allowed' : 'forbidden'} topics...`}
+                    value={newTopic}
+                    onChange={(e) => setNewTopic(e.target.value)}
+                    onKeyPress={(e) => e.key === 'Enter' && addTopic()}
+                    className="room-input"
+                  />
+                  <button className="btn btn-small" onClick={addTopic}>Add</button>
+                </div>
+              </div>
+              
+              {topicFilters.length > 0 && (
+                <div className="topic-tags">
+                  {topicFilters.map((topic, index) => (
+                    <span key={index} className="topic-tag">
+                      {topic}
+                      <button 
+                        className="remove-topic-btn" 
+                        onClick={() => removeTopic(topic)}
+                        title="Remove topic"
+                      >
+                        <X size={12} />
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="section-card">
         {renderHistory()}

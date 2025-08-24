@@ -99,7 +99,7 @@ export default class RoomServer implements Party.Server {
           await this.handleRepeatQuestion(parsedMessage.data);
           break;
         case "admin-generate-questions":
-          await this.handleGenerateQuestions(sender);
+          await this.handleGenerateQuestions(parsedMessage.data, sender);
           break;
         case "start-game":
           await this.handleStartGame(sender);
@@ -526,13 +526,13 @@ export default class RoomServer implements Party.Server {
     return players.sort((a, b) => a.joinedAt - b.joinedAt);
   }
 
-  private async handleGenerateQuestions(sender: Party.Connection) {
+  private async handleGenerateQuestions(data: any, sender: Party.Connection) {
     try {
       // Get existing questions to avoid duplicates
       const upcoming = (await this.room.storage.get<Question[]>("upcoming-questions")) || [];
       const existingQuestions = upcoming.map(q => q.text.toLowerCase().trim());
       
-      const prompt = `Generate 5 completely unique trivia questions with answers and point values. 
+      const prompt = `Generate ${data?.questionCount || 5} completely unique trivia questions with answers and point values. 
 
 IMPORTANT REQUIREMENTS:
 - Each question must be completely different from the others
@@ -540,6 +540,14 @@ IMPORTANT REQUIREMENTS:
 - Each question should cover a different category (science, history, geography, arts, sports, etc.)
 - Questions should be engaging and varied in difficulty
 - Points should reflect question difficulty (5-15 for easy, 16-30 for medium, 31-50 for hard)
+
+${data?.topicFilters && data.topicFilters.length > 0 ? 
+  `${data.topicFilterType === 'whitelist' ? 
+    'TOPICS TO INCLUDE (only create questions about these subjects):' : 
+    'TOPICS TO AVOID (do not create questions about these subjects):'
+  } ${data.topicFilters.join(', ')}` : 
+  ''
+}
 
 EXISTING QUESTIONS TO AVOID (do not create anything similar):
 ${existingQuestions.slice(0, 3).join(', ')}
